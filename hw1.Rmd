@@ -1,0 +1,132 @@
+---
+title: "HW1"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1. (see also problems 1-3 of chapter 2 on the book)
+
+For the following problems, state each model statistically, identifying
+each predictor with one or more component variables. Identify and
+interpret each regression parameter except for coefficients of nonlinear
+terms in spline functions. State each hypothesis below as a formal
+statistical hypothesis involving the proper parameters, and give the
+(numerator) degrees of freedom of the test. State alternative hypotheses
+carefully with respect to unions or intersections of conditions and list
+the type of alternatives to the null hypothesis that the test is
+designed to detect.
+
+Questions: What is meant by identifying each predictor with one or more
+component variables? Dummy variables?
+
+-   **1a.** (1 point) A property of $Y$ such as the mean is linear in
+    age and blood pressure and there may be an interaction between the
+    two predictors. Test $H_0$ : there is no interaction between age and
+    blood pressure. Also test $H_0$ : blood pressure is not associated
+    with $Y$ (in any fashion). State the effect of blood pressure as a
+    function of age, and the effect of age as a function of blood
+    pressure.
+
+a.  The statistical model is:\
+    $$C(Y|age, BP) = \beta_0 + \beta_1age + \beta_2BP + \beta_3(age \times BP)$$
+
+b.  $\beta_0$, the intercept term, represents the value of the property
+    of Y when both age and blood pressure are zero:
+    $C(Y|age = 0, BP = 0)$.
+
+c.  $\beta_1$ is the parameter for the main effect of age. In the
+    context of a model in which age interacts with blood pressure, this
+    represents the amount by which $C(Y|BP = 0)$ increases per unit
+    increase in age, likely per year. Notice an estimate of this
+    parameter regards a population with zero blood pressure -- not
+    likely a population in which we are interested.
+
+d.  $\beta_2$ is the parameter for the main effect of blood pressure. In
+    the context of a model in which age interacts with blood pressure,
+    this represents the amount by which $C(Y|age = 0)$ increases per
+    unit increase in blood. Notice an estimate of this parameter regards
+    the populations of newborns only.
+
+e.  $\beta_3$ is the parameter for the interaction between age and blood
+    pressure. This represents the non-additive, combined effect of age
+    and blood pressure $C(Y)$. Hence, its value denotes the change in
+    effect of age on $C(Y)$ per unit increase in blood pressure. Or,
+    equivalently, the change in effect of blood pressure per unit
+    increase in age.
+
+f.  To test the hypothesis of an interaction between age and blood
+    pressure, test\
+    $$H_0: \beta_3 = 0$$ $$H_\alpha: \beta_3 \ne 0$$
+
+g.  To test the hypothesis that blood pressure is associated with
+    $C(Y)$, test $$H_0: \beta_2 = \beta_3 = 0$$ $$H_\alpha: otherwise$$
+
+h.  The effect of blood pressure as a function of age =
+    $\beta_2 + \beta_3age$
+
+i.  The effect of age as a function of blood pressure =
+    $\beta_1 + \beta_3BP$
+
+-   **1b.** (1 point) Consider a linear additive model involving three
+    treatments (control, drug $Z$, and drug $Q$) and one continuous
+    adjustment variable, age. Test $H_0$ : treatment group is not
+    associated with response, adjusted for age. Also test $H_0$ :
+    response for drug $Z$ has the same property as the response for drug
+    $Q$, adjusted for age.
+
+a.  The statistical model is:\
+    $$C(Y|X_1, X_2, X_3) = \beta_0 + \beta_1X_1 + \beta_2X_2 + \beta_3X_3$$
+    where $X_1$ is the continuous covariate, and $X_2, X_3$ are dummy
+    variables representing the treatment:
+
+    +----------------------------+----------+------------+------------+
+    | Dummy Variable             | Control  | Drug Z     | Drug Q     |
+    +============================+==========+============+============+
+    | $X_2$                      | 0        | 1          | 0          |
+    +----------------------------+----------+------------+------------+
+    | $X_3$                      | 0        | 0          | 1          |
+    +----------------------------+----------+------------+------------+
+
+b.  $\beta_0$, the intercept term, represents the value of the property
+    of Y when the patients are in the control group and the continuous
+    covariate is zero: $C(Y|X_1 = 0, TMNT = control)$
+
+c.  $\beta_1$ is the parameter for the effect of the continuous covariate. It is the amoung by which $C(Y)$ increases per unit increase in $X_1$. 
+
+# TODO: start here
+
+d.  $\beta_2$ is the parameter for the main effect of blood pressure. In
+    the context of a model in which age interacts with blood pressure,
+    this represents the amount by which $C(Y|age = 0)$ increases per
+    unit increase in blood. Notice an estimate of this parameter regards
+    the populations of newborns only.
+
+-   **1c.** Consider models each with two predictors, temperature and
+    white blood count (WBC), for which temperature is always assumed to
+    be linearly related to the appropriate property of the response, and
+    WBC may or may not be linear (depending on the particular model you
+    formulate for each question). Test:
+
+    -   (1 point) **i.** $H_0$: WBC is not associated with the response
+        versus $H_a$ : WBC is linearly associated with the property of
+        the response.
+    -   (1 point) **ii.** $H_0$: WBC is not associated with $Y$ versus
+        $H_a$: WBC is quadratically associated with $Y$. Also write down
+        the formal test of linearity against this quadratic alternative.
+    -   (1 point) **iii.** $H_0$: WBC is not associated with $Y$ versus
+        $H_a$: WBC related to the property of the response through a
+        smooth spline function; for example, for WBC the model requires
+        the variables WBC, WBC', and WBC'' where WBC' and WBC''
+        represent nonlinear components (if there are four knots in a
+        restricted cubic spline function). Also write down the formal
+        test of linearity against this spline function alternative.
+    -   (1 point) **iv.** Test for a lack of fit (combined nonlinearity
+        or non-additivity) in an overall model that takes the form of an
+        interaction between temperature and WBC, allowing WBC to be
+        modeled with a smooth spline function.
