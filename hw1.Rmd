@@ -1,8 +1,10 @@
 ---
 title: "HW1"
-output: html_document
-editor_options: 
-  markdown: 
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -62,7 +64,8 @@ e.  $\beta_3$ is the parameter for the interaction between age and blood
 
 f.  To test the hypothesis of an interaction between age and blood
     pressure, test\
-    $$H_0: \beta_3 = 0$$ $$H_\alpha: \beta_3 \ne 0$$
+    $$H_0: \beta_3 = 0$$ 
+    $$H_\alpha: \beta_3 \ne 0$$
 
 g.  To test the hypothesis that blood pressure is associated with
     $C(Y)$, test $$H_0: \beta_2 = \beta_3 = 0$$ $$H_\alpha: otherwise$$
@@ -99,14 +102,16 @@ b.  $\beta_0$, the intercept term, represents the value of the property
 
 c.  $\beta_1$ is the parameter for the effect of the continuous covariate. It is the amoung by which $C(Y)$ increases per unit increase in $X_1$. 
 
-# TODO: start here
+d.  $\beta_2$ is the parameter for the first dummy variable for the categorical drug treatment. The parameter represents the difference in $C(Y)$ between the control and Drug Z. 
 
-d.  $\beta_2$ is the parameter for the main effect of blood pressure. In
-    the context of a model in which age interacts with blood pressure,
-    this represents the amount by which $C(Y|age = 0)$ increases per
-    unit increase in blood. Notice an estimate of this parameter regards
-    the populations of newborns only.
+e.  $\beta_3$ is the parameter for the second dummy variable for the categorical drug treatment. The parameter represents the difference in $C(Y)$ between the control and Drug Q. 
 
+f. To test the hypothesis that the drug treatment has an effect on $C(Y)$ controlling for age, test:
+$$H_0: \beta_2 = \beta_3 = 0$$
+$$H_{\alpha}: otherwise$$
+g. To test whether the two drugs have the same effect, test:
+$$H_0: \beta_2 = \beta_3$$
+$$H_{\alpha}: \beta_2 \ne \beta_3$$
 -   **1c.** Consider models each with two predictors, temperature and
     white blood count (WBC), for which temperature is always assumed to
     be linearly related to the appropriate property of the response, and
@@ -116,9 +121,43 @@ d.  $\beta_2$ is the parameter for the main effect of blood pressure. In
     -   (1 point) **i.** $H_0$: WBC is not associated with the response
         versus $H_a$ : WBC is linearly associated with the property of
         the response.
+        
+a. The model is:
+$$C(Y|WBC, temp) = \beta_0 + \beta_1temp + \beta_2WBC$$
+
+b. $\beta_0$ represents the intercept -- the value of $C(Y)$ when WBC is 0. 
+
+c. $\beta_1$ represents the linear effect of temperature -- the increase in $C(Y)$ per unit increase in temperature.
+
+d. $\beta_2$ represents the linear effect of WBC -- the increase in $C(Y)$ per unit increase in WBC. 
+
+e. To test for a linear associate between $C(Y)$ and WBC: 
+$$H_0: \beta_2 = 0$$
+$$H_{\alpha}: \beta_2 \ne 0$$
+
+        
     -   (1 point) **ii.** $H_0$: WBC is not associated with $Y$ versus
         $H_a$: WBC is quadratically associated with $Y$. Also write down
         the formal test of linearity against this quadratic alternative.
+        
+a. The model is:
+$$C(Y|WBC, temp) = \beta_0 + \beta_1temp + \beta_2WBC + \beta_3WBC^2$$
+b. $\beta_0$ is again the intercept -- the value of $C(Y)$ when WBC (and its square) is zero. 
+
+c. $\beta_1$ again is the linear effect of temperature. 
+
+c. $\beta_2$ is no longer the linear effect of WBC, but the constant for the linear term in a polynomial model. It represents the change in $C(Y)$ per unit WBC *when WBC is 0*.
+
+d. $\beta_3$ represents the quadratic effect of WBC, the strength of the quadratic relationship, or the increase in effect of WBC per unit increase in WBC. 
+
+e. To test no relationship against a quadratic relationship:
+$$H_0: \beta_2 = \beta_3 = 0$$
+$$H_{\alpha}: otherwise$$
+e. The formal test of linearity vs. the quadratic alternative is: 
+
+$$H_0: \beta_3 = 0$$
+$$H_{\alpha}: \beta_3 \ne 0$$
+
     -   (1 point) **iii.** $H_0$: WBC is not associated with $Y$ versus
         $H_a$: WBC related to the property of the response through a
         smooth spline function; for example, for WBC the model requires
@@ -126,7 +165,32 @@ d.  $\beta_2$ is the parameter for the main effect of blood pressure. In
         represent nonlinear components (if there are four knots in a
         restricted cubic spline function). Also write down the formal
         test of linearity against this spline function alternative.
+        
+a. The restricted cubic spline model is as stated: 
+
+$$C(Y|WBC) = \beta_0 + \beta_1temp + \beta_2WBC + \beta_3WBC' + \beta_4WBC''$$
+
+b. To test the hypothesis of no association: 
+
+$$H_0: \beta_2 = \beta_3 = \beta_4 = 0$$
+$$H_{\alpha}: otherwise$$
+e. To test the hypothesis of linearity:
+
+$$H_0: \beta_3 = \beta_4 = 0$$
+$$H_{\alpha}: otherwise $$
+
     -   (1 point) **iv.** Test for a lack of fit (combined nonlinearity
         or non-additivity) in an overall model that takes the form of an
         interaction between temperature and WBC, allowing WBC to be
         modeled with a smooth spline function.
+        
+a. The model is:
+
+$$C(Y|WBC, temp) = \beta_0 + \beta_1temp + \beta_2WBC + \beta_3WBC' +
+\beta_4WBC'' + \beta_5(temp \times WBC) + \beta_6(temp \times WBC') + 
+\beta_7(temp \times WBC'')$$
+
+b. The test for an overall lack of fit is: 
+
+$$H_0: \beta_3 = \beta_4 = \beta_5 = \beta_6 = \beta_7 = 0$$
+$$H_{\alpha}: otherwise$$

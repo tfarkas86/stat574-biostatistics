@@ -1,0 +1,206 @@
+---
+title: "HW2"
+author: "Tim Farkas"
+date: "1/25/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,eval=TRUE,warning=FALSE,message=FALSE,results=FALSE)
+set.seed(101000)
+```
+
+The SUPPORT Study. (problems are based on 1-6 of chapter 3 on the book; modifications were made) 
+===
+The SUPPORT Study (Study to Understand Prognoses Preferences Outcomes and Risks of Treatments) was a five-hospital study of 10,000 critically ill hospitalized adults. Patients were followed for in-hospital outcomes and for long-term survival. We analyze 35 variables and a sample of 1000 patients from the study.
+```{r}
+setwd("~/Dropbox/3_Education/Courses/stat_574_biostats/code/")
+
+library(readxl) #For reading in excel file
+library(plyr)#For the plyr function family
+library(tidyverse)#For data subsetting
+supportsubset <- read_excel("../supportsubset.xlsx")
+is.data.frame(supportsubset)
+```
+- **1a.** Explore the variables and patterns of missing data in the SUPPORT
+dataset.
+    - (1 point) **i.** Based on the percentages of missing values for the variables, which variable have the greatest percentage of missing and what variables do not have missing values. 
+    
+```{r, results = TRUE}
+na.ind = is.na(supportsubset) #If a value is missing, is.na() will return TRUE
+na.perc = apply(na.ind,2,mean)    
+print(na.perc)
+``` 
+
+    - (1 point) **ii.**   The codes below gives a figure of clusters for missing and nonmissing using a hierarchical clustering method https://www.rdocumentation.org/packages/amap/versions/0.8-18/topics/hcluster. Variables that appear under the same branch are similar in their missingness. kendall's tau was used as the distance measure. Based on the plot, summarize what variables tend to be missing together. 
+    
+```{r}
+library(amap) #For the clustering function `hclust` and distance function `Dist`
+dist_matc <- Dist(t(na.ind), method = 'kendall')
+hclust_avg <- hclust(dist_matc, method = 'average')
+plot(hclust_avg,xlab="Clustering based on Kendall distance")
+```  
+    
+The most striking pattern visible in the cluster dendrogram is the polytomy or "comb" containing 16 variables, all of which have no missing data. , indicating they have the same missingness pattern across records. It's hard to summarize the clusters of missingness, except to say the hospital "measured" variables, like serum pH and glucose, all have more similar missingness patterns than education and income, which are very similar. This makes sense, since there is good reasons to suspect the drivers of missingness are different. With hospital collected samples, study dropout will lead to missingness, as well as other random drivers, whereas responses about income and education were likely collected toward the beginning of the study and might be met with refusals to answer. 
+    
+    - (1 point) **iii.** Total hospital costs (variable `totcst`) were estimated from hospital-specific Medicare cost-to-charge ratios. Use the following logistic regression to characterize what kind of patients have missing `totcst`. For this characterization, the following patient descriptors are used: `age`, `sex`, `dzgroup`, `num.co`, `edu`, `income`, `scoma`, `meanbp`, `hrt`, `resp`, `temp`.
+
+```{r, results = TRUE}
+# Step 1: create a dataset with the predictors specified in the description of the problem and an indicator variable for whether `totcst` is missing    
+pred = c("age", "sex", "dzgroup", "num.co", "edu", "income", "scoma", "meanbp", "hrt", "resp", "temp")
+
+natotcst <- supportsubset %>%
+  select(pred) %>%
+  bind_cols(totcst = na.ind[, "totcst"]) 
+
+# Step 2: perform a logistic regression
+lrtotst = glm(totcst~.,
+              data = natotcst, family = "binomial")
+summary(lrtotst)
+```
+
+Based on this logistic regression, it appears patients with a higher number of commorbitities are less likley to have missing data for total cost. I have no hypothesis for why this might be the case. There is also an indication that patients with higher respiration rates are more likely to have missing data for totcst. The p-value is only 0.026, so I don't consider this strong evidence of a true effect. 
+
+- **1b.** Develop a model to predict costs by developing reliable imputations for missing costs. 
+
+ - (1 point) **i.** The cost estimates are not available on 105 patients. Total hospital charges (bills) are available on all but 25 patients. Relate these two
+variables to each other with an eye toward using `charges` to predict
+`totcst` when `totcst` is missing. Comment on whether linear
+regression or linear regression after taking logs of both variables is
+better. Also explain why.
+
+```{r}
+#create a dataset of these two variables without missing data
+plot.data <- supportsubset %>%
+  select(charges, totcst) %>%
+  drop_na() 
+
+plot.data %>%
+  ggplot() +
+  geom_point(aes(x = charges, y = totcst)) 
+
+plot.data %>%
+  mutate(across(.f = ~ log(.x))) %>%
+  ggplot() + 
+  geom_point(aes(charges, totcst)) +
+  xlab("log of charges") +
+  ylab("log of totcst")
+
+```
+
+Log transformation will likely yield a better imputation because of a much stronger relationship between log-transformed measures than raw measures. The linear regression model is also (likely) more appropriate given better-behaved data. 
+
+  - (1 point) **ii.** Impute missing total hospital costs in SUPPORT based on a regression model (you may choose whether or not to take the log transformation of both variables based on the previous question) relating charges to costs, when charges are available. Use or modify the following R codes to impute the missing `totcst` (modify the codes if you want to take the log transformations first and then predict). Write down the prediction equation.  How many missing values are still there for `totcst` after the imputation (use `is.na` function to obtain an indicator for missing or not and `sum` to count how many missing in total)? 
+  
+```{r}
+lmtotcst <- supportsubset %>% 
+  #mutate(across(totcst, charges, .f = ~ log(.x))) %>%
+  drop_na() %>%
+  lm(totcst ~ charges, data = .)
+                  
+#if totcst is missing, then impute it based on the predicted value from the linear regression. Otherwise, use the original observed value of `totcst`
+estcoef = summary(lmtotcst)$coefficient
+predtotcst = estcoef[1] + supportsubset$charges * estcoef[2]
+totcst.final = ifelse(is.na(supportsubset$totcst), 
+                      predtotcst, 
+                      supportsubset$totcst) 
+
+sum(is.na(totcst.final)) # 16
+
+#view(bind_cols(totcst.final, supportsubset$totcst, supportsubset$charges))
+```
+
+The prediction equation is:
+
+$$TOTCST = \beta_0 + \beta_1CHARGE$$
+16 values are still missing. These are cases where both charge and totcst are missing.
+
+Here I used the linear regression without log transformation. When back-transforming to the raw data scale (with `exp(x)`) the results had some pretty extreme values, which spooked me, so I went with the untransformed regression. Is that the correct way? Simply exponentiate the log-transformed predictions? The predictions should be on the log scale, so it **should** be a fair approach. The difference between non-transformed and transformed results is unsettling. 
+
+  - (1 point) **iii.** The following codes compute the likely error in approximating total cost using charges by computing the median absolute difference between predicted and observed
+total costs in the patients having both variables available. If you
+used a log transformation, modify the codes to compute the median absolute percent
+error in imputing total costs by anti-logging the absolute difference in
+predicted logs.
+
+```{r}
+diffnce = predtotcst - supportsubset$totcst #note if either a `totcst` value or a `predtotcst` is missing, the difference is missing
+#obsboth = is.na(supportsubset$totcst) | is.na(supportsubset$charges)
+mae = median(abs(diffnce), na.rm=TRUE)
+```
+
+
+- **1c.** (1 point) The following codes use predictive mean matching to multiply impute cost and other variables with missing values in the formula 10 times per missing observation (see https://www.rdocumentation.org/packages/Hmisc/versions/4.3-1/topics/aregImpute). Note that `dzgroup`, `sfdm2`, `adlp`, and  `race` are not used since boostrap samples can have categories with too few observations and the algorithm runs into numerical problems if you include them. One way to fix the problem is to combine categories. Describe graphically the distributions of imputed values of `totcst` and briefly compare these to distributions of non-imputed values.
+
+```{r}
+library(Hmisc)
+impute.pmm <-aregImpute(~age + death + sex+hospdead + slos + d.time + dzclass + totcst+num.co+edu+income+charges+totmcst + avtisst +meanbp +wblc + hrt + resp + temp + pafi + alb + bili + crea + sod + ph + glucose + bun + urine  + adls  + adlsc, 
+                        data = supportsubset,
+                        n.impute = 10, 
+                        match="weighted", boot.method="simple", 
+                        burnin = 3, type="pmm")
+
+#Extract imputed value for totcst
+pmm.impute <- impute.pmm$imputed$totcst
+
+as_tibble(pmm.impute) %>%
+  set_names(paste0("imp", 1:10)) %>%
+  pivot_longer(imp1:imp10, names_to = "imp_no", values_to = "totcst") %>%
+  bind_rows(bind_cols(imp_no = "raw",
+                      supportsubset %>%
+                        drop_na(totcst) %>%
+                        select(totcst))) %>%
+  ggplot() + 
+  geom_histogram(aes(x = totcst)) + 
+  facet_grid(rows = "imp_no", scales = "free")
+```
+
+These imputations look pretty good, except they're predicting a slightly fatter right tail than the raw data seem to have. 
+
+- **1d.** (1 point) Using the multiple imputed values from step 2c, the following codes develop an overall least squares model for total cost (using the log transformation) making optimal use of partial information, with variances computed so as to take imputation (except for
+cost) into account. The model uses the predictors in Problem 1. For simplicity, linearity and additivity are assumed.
+Compute and interpret the resulting ratios of imputation-corrected standard error to
+apparent standard error and explain why ratios greater than one do not mean
+that imputation is inefficient.
+```{r, results = TRUE}
+
+fmi = fit.mult.impute(totcst~age+sex+dzgroup+num.co+edu+income+scoma+meanbp+hrt+resp+temp,lm,impute.pmm,data = supportsubset)
+sqrt(diag(vcov(fmi))) #imputation-corrected variance
+ols = lm(totcst~age+sex+dzgroup+num.co+edu+income+scoma+meanbp+hrt+resp+temp,data = supportsubset)
+sums <- summary(ols)#apparent variance
+
+head(bind_cols(imp_var = sqrt(diag(vcov(fmi))), 
+               raw_var = sums$coefficients[, "Std. Error"]) %>%
+       mutate(var_ratio = imp_var / raw_var))
+
+```
+
+Actually, I'm seeing here that standard errors for the imputed data set are smaller than those for the raw data set with missing values. I think this means the benefit to efficiency of including more data is outweighing the penalty due to imputation.
+
+In any case, I'm not sure how to answer the question about why ratios greater than one do not indicate that imputation is inefficient. Less confidence is less confidence. But unless the data are missing completely at random, failure to deal with missing data properly can lead to bias. If bias is severe enough, efficiency is beside the point ... ? 
+
+- **1e.** (1 point) The following codes use the Multivariate Imputations by Chained Equations (MICE) method to multiply impute cost and other variables with missing values 10 times per missing observation. The R documentation is here https://www.rdocumentation.org/packages/mice/versions/3.6.0/topics/mice.The function in the package allows customized imputation model for each variable. The default one is `pmm`.  However, no boostrap step is used (aregImpute uses bootstap steps). The code below uses the method `misdastouch` which represents weighted pmm. Describe graphically the distributions of imputed values of `totcst` and state the differences of these to distributions of non-imputed values.
+```{r}
+library(mice)
+impute.mice <-mice(data = supportsubset,m = 10, method="pmm")
+densityplot(impute.mice,~totcst) #the blue is the raw data density, the red ones are imputed distributions
+```
+
+MICE is showing a similar pattern to PMM using Hmisc, where density is spread out into the right tail of the distribution of totcst values, being less clustered toward 0. 
+
+- **1f.** (1 point) The following codes repeat 2d. Compute and comment on the ratios of imputation-corrected standard error to apparent standard error. Compare those to the `aregImpute` approach.
+
+```{r, results = TRUE}
+
+fmice = with(impute.mice,lm(totcst~age+sex+dzgroup+num.co+edu+income+scoma+meanbp+hrt+resp+temp))
+sum_pool <- summary(pool(fmice))
+ols <- summary(lm(totcst~age+sex+dzgroup+num.co+edu+income+scoma+meanbp+hrt+resp+temp, data = supportsubset))
+
+head(bind_cols(imp_var = sum_pool$std.error, 
+               raw_var = ols$coefficients[, "Std. Error"]) %>%
+       mutate(var_ratio = imp_var / raw_var))
+```
+
+Wow! These values are all much much closer than with the PMM approach above, with ratios pretty much all near 0.94. 
