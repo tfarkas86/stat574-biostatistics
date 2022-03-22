@@ -1,0 +1,131 @@
+---
+title: "HW4"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,eval=TRUE,warning=FALSE,message=FALSE)
+set.seed(101000)
+```
+
+Case study about randomized trial of estrogen for treatment of prostate cancer
+===
+This case study is a modified version of the case study in Chapter 11 on developing, describing, and validating a binary logistic regression model. The dataset is a 506-patient prostate cancer dataset  from a randomized trial comparing four treatments for stage 3 and 4 prostate cancer, with almost equal numbers of patients on placebo and each of three doses of estrogen. Larger doses of estrogen reduced the effect of prostate cancer but at the cost of increased risk of cardiovascular death. The goal of this case study is to learn about how treatment and baseline variables relate to the cause of death for those patients who died.  We use a subset of the original dataset, including those patients dying from prostate cancer, heart or vascular disease, or cerebrovascular disease. Our goal is then to predict cardiovascular–cerebrovascular death given that the patient died from either cvd or prostate cancer. 
+
+The following code firstly obtains the desired subset of the data and then combines  infrequent categories. The dataset has some missing values but the amount of missing is very low. Next, `transcan` and `impute` provide single impuations for missing values. The missing values in `prostate` are then replaced by the imputed values and a subset that contains only participant who died from prostate cancer, heart or vascular disease, or cerebrovascular disease.
+
+```{r}
+library(Hmisc)
+library(rms)
+getHdata (prostate)
+prostate <- within (prostate , 
+                    {levels (ekg)[ levels (ekg) %in%c( 'old MI' , 'recent MI' )] <- ' MI '
+                    ekg.norm <- 1*(ekg %in% c( 'normal' , 'benign' ))
+                    pfn <- as.numeric (pf)
+                    levels (pf) <- levels (pf)[c(1,2,3,3)] #this combined two categories: confined to bed and in bed >50% daytime
+                    cvd <- status %in% c("dead - heart or vascular","dead - cerebrovascular")
+                    rxn = as.numeric (rx) })
+
+ptrans <- transcan (~ sz + sg + ap + sbp + dbp +age + wt + hg + ekg + pf + bm + hx + dtime + rx ,
+imputed=TRUE , transformed =FALSE , data =prostate , pl=FALSE , pr=FALSE )
+imp <- impute (ptrans, data =prostate , list.out =TRUE)
+NAvars<- all.vars (~ sz + sg + age + wt + ekg)
+for(x in NAvars ) prostate [[x]] <- imp[[x]]
+subset <- prostate$status %in% c("dead - heart or vascular", "dead - cerebrovascular","dead - prostatic ca")
+psub <- prostate [subset,]
+```
+
+- **1a.** (2 points) The first analysis assesses how well principle components predict the cause of death. There are 127 cvds. We use the 15:1 rule of thumb to justify using the first 8 PCs. `ap` is log-transformed because of its extreme distribution. The second analysis fits a binary logistic model on original variables assuming linearity and no interactions. The third anlaysis expands continuous variables using splines (the sample size may not allow estimation of these parameters reliably).  Questions to you: compare the three model fits. Which model do you prefer? Why? 
+```{r}
+
+ipc <- function (x, k=1,...){princomp (x,..., cor=TRUE)$scores [,1:k]}
+pc8 <- ipc(~ sz + sg + log (ap) + sbp + dbp + age +wt + hg + ekg.norm + pfn + bm + hx + rxn + dtime ,
+data=psub , k=8)
+cvd <- psub$cvd
+f8 <- lrm(cvd~pc8 )
+
+
+f <- lrm (cvd ~ sz + sg + log (ap) + sbp + dbp + age + wt + hg + ekg + pf + bm + hx + rx + dtime , data=psub)
+
+g <- lrm (cvd ~ rcs(sz ,4) + rcs (sg ,4) + rcs(log (ap),4) + rcs(sbp ,4) + rcs(dbp ,4) + rcs(age ,4) + rcs(wt ,4) + rcs(hg ,4) + ekg + pf + bm + hx + rx + rcs(dtime ,4), data=psub)
+
+c(AIC(f8),AIC(f),AIC(g))
+```
+
+Based solely on AIC, I would choose the simple logistic regression model because AIC is the lowest for this model. Hence, even though there is a penalty for including more parameters than for PCA regression, the added information is worth it. Although more information is likely explained by the restricted cubic spline model, there are too many parameters here, so overfitting is a likely consequence, and AIC indicates the added information is not worth the parameters. 
+
+
+- **1b.** (2 points) The following codes perform a clustering of the variables considered in the regressions. Instead of using a principle analysis on all the variables, can you use PC on subsets of variables that you want to combine? If so, extract 1 PC (since only 8 parameters can be reliably estimated) for each subsets of variables and include them in the regression. Compare the regression to the regressions in 1a.
+
+```{r}
+vc <- varclus(~sz + sg + log (ap) + sbp + dbp + age + wt + hg + ekg + pf + bm + hx+dtime, sim= 'hoeffding' , data =psub)
+plot (vc)
+
+pc1 <- princomp(~ sg + log(ap) + sz + bm + wt + hg , data = psub)$scores[,1]
+pc2 <- princomp(~ sbp + dbp + age + dtime, data = psub)$scores[,1]
+
+f2 <- lrm (cvd ~ ekg + pf  + hx + rx + pc1 + pc1 , data=psub)
+AIC(f2)
+```
+
+Yeesh, no way, this AIC is far above the others. A much less informative model!
+
+- **1c.** (2 points) Describe the model you prefer. Use the output from `summary` and `anova` to answer whether the treatment, time to death `dtime` or other baseline variables are related to the type of death. For any variables that are related, explain how are they related.
+
+```{r}
+f
+anova(f)
+```
+
+The `anova` function is a good way to begin analysis, since it will show clearly whether a predictor overall is significant for both continuous and categorical predictors. It shows that neither the treatment `rx`, nor `ekg` are significant, but that there is marginal significance of bedtime duration `pf` at p = 0.063. The summary shows this effect to be due to the large difference between the high bedtime % and the other two treatments. Oddly, normal activity leads to a reduction in the probability of cvd relative to < 50% in bed, but an increase relative to > 50% in bed. Could be some complex pattern, but we may be chasing noise here. The summary shows that `dtime` is not a significant predictor of the likelihood of dying from CV. A few other baseline predictors are significant. Variables positively related to CV death are `dbp`, `age`, and `hx`, whereas `sz`, `sg`, and `ap` are negatively related.  
+
+- **1d.** (2 points) Use the `validate` function to validate the models. For example, the following codes validate the three models in part a. You need to add to this list of models if you come up with a different model in 1b. Compare the validation results (try to compare as many criteria as possible). Is your preferred model has the best validation results using criteria, say `Dxy`?
+```{r}
+f8 = update (f8, x=TRUE , y=TRUE)
+f = update (f, x=TRUE , y=TRUE)
+g = update (g, x=TRUE , y=TRUE)
+f2 = update(f2, x=TRUE, y=TRUE)
+validate (f8 , B=200)
+validate (f , B=200)
+validate (g , B=200)
+validate(f2, B = 200)
+```
+
+Wow this function is great! My preferred model, the simple logistic regression, does not validate as well as the first PCA regression model, even though it has the lowest AIC. Looking at the estimates of optimism by Dxy, we see optimism at 0.09, whereas for the `f8` model it is 0.03. Optimism in $R^2$ is really much worse, at 0.14 vs. 0.04 for the `f8` model. Given the small difference in AIC betwen these models, I would probably go with the `f8` model because it seems to validate much better. 
+
+- **1e.** (2 points) Approximate your perferred model using running backwards step-down OLS regression. The following codes provides approximation to model `f`. You need to modify the codes if your final model isn't `f`.  Based on the correlation square of the approximation models, after removing the first six variables, the correlation square plugged to 0.945. In other words, after 6 deletions, slightly more than 0.05 of both the approximation R2 are lost. The variables that have nonzero coefficients at iteration six in the matrix `betas` are retained in the approximation. Use 0.05 as a threshold for approximating your perferred model. Please describe your final model as well. 
+
+
+```{r}
+lp <- predict(f) # Compute linear predictor from full model
+a <- ols(lp ~ sz + sg + log(ap) + sbp + dbp + age + wt + hg + ekg + pf + bm + hx + rx + dtime , sigma =1,
+data =psub) # using the predicted value as outcome and run a regression again
+s <- fastbw (a, aics =10000) #  Specify silly stopping criterion `aic=10000` to remove all variables
+fastbw(a)
+betas <- s$Coefficients
+X <- cbind (1, f$x) # design matrix
+# Compute the series of approximations to lp
+ap <- X %*% t(betas)
+r2 <- NULL
+for(i in 1:dim(betas)[1]){
+  r2[i] = cor(lp,ap[,i])^2
+}
+r2
+
+# final model 
+fm <- lrm(cvd ~ dbp + ekg + rx + ap + hx + age + pf + sz + sg, data = psub)
+anova(fm)
+fm
+```
+
+With this reduced model, we see `ekg` and `pf` are not significant based on the `anova` output. This time, `rx` shows marginal significance, which the summary shows is driven by the difference between the highest dose of 5mg and the placebo. The other baselines factors are significant in various ways, that could be useful for prediction on future data. Let's look at the validation for fun ...
+
+```{r}
+fm <- update(fm, x = TRUE, y = TRUE)
+validate(fm)
+```
+
+Oh it got way better! With optimism in the $R^2$ dropping from 0.14 to 0.08. Im happy with this one. Time to publish!
+

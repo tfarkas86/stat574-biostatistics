@@ -1,0 +1,153 @@
+---
+title: "STAT 590 Quiz 1"
+author: "Tim Farkas"
+date: "3/9/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache=TRUE, autodep=TRUE, cache.comments=TRUE)
+```
+
+
+The total credit of this quiz is 10 points. You must submit **your own** lab as an knitted pdf file. To answer the questions, display the results and write your comments if asked.
+
+
+```{r}
+## For reproducibility --- don't change this!
+set.seed(01182018)
+library(magrittr)
+library(purrr)
+```
+
+Maximum likelihood estimation using the bisection method, the Newton-Raphson method, and the fixed-point method
+===
+The following data are i.i.d sample from a Cauchy($\theta$,1) distribution which has the density function as $$ f(x) = \frac{1}{\pi\left(1+\left(x-\theta \right)^2\right)} $$ and hence the likelihood function is 
+\begin{equation}
+L (\theta) = \prod_{i=1}^{20} \frac{1}{\pi\left(1+\left(x_i-\theta \right)^2\right)}
+\label{eq:chap2.simple}
+\end{equation}
+where each $x_i$ represents a data point.
+
+```{r}
+data = c(1.77, -0.23, 2.76, 3.80, 3.47, 56.75, -1.34, 4.24, -2.44, 3.29, 
+         3.71,-2.4,4.53,-0.07,-1.05, -13.87, -2.53, -1.75, 0.27, 43.21)
+```
+- **a.** (1 point) Write a R function for the **log** of the likelihood function. Evaluate the function at 0 and report it.
+
+```{r, eval = TRUE}
+cauch <- function(x, loc = 1) 1 / (pi * (1 + (x - loc)^2))
+
+#cauch(0)
+#dcauchy(0, location = 1)
+
+ll_cauchy <- function(data, loc = 0, scale = 1) {
+  map_dbl(loc, ~ sum(log(dcauchy(data, .x, scale))))
+}
+
+
+ll_cauchy(data, loc = 0) # -72.97366
+```
+
+The log likelihood of the data given a location parameter of 0 is -72.97366.
+
+- **b.** (1 point) Write down the first and second derivatives of the loglikelihood function. Use $x_i$ to denote data still.
+
+$$LL(Cauchy(\theta, 1)) = \sum ln \left(\frac{1}{\pi(1 + (x_i - \theta)^2)}\right)$$
+$$\frac{d}{d\theta}LL(Cauchy(\theta, 1)) = \sum \frac{2(x_i - \theta)}{1 + (x_i - \theta)^2}$$
+$$\frac{d^2}{d\theta^2}LL(Cauchy(\theta, 1)) = \sum\left(2\frac{(x_i - \theta)^2 - 1}{(1 + (x_i - \theta)^2)^2}\right)$$
+
+- **c.** (1 point) Graph the loglikelihood and its first derivative function over the region -30 to 50.
+
+```{r}
+ll1_cauchy <- function(data, loc = 0, scale = 1) {
+  map_dbl(loc, ~sum(2 * (data - .x)/(1 + (data - .x)^2)))
+}
+
+ll2_cauchy <- function(data, loc = 0, scale = 1) {
+  map_dbl(loc, ~ sum(2 * ((.x - data)^2 - 1)/(1 + (data - .x)^2)^2))
+} 
+
+
+plot(-30:50, ll_cauchy(data, loc = -30:50), type = "l", 
+     ylab = "log likelihood", xlab = "location parameter")
+plot(-30:50, ll1_cauchy(data, loc = -30:50), type = "l", 
+     ylab = "1st derv log likelihood", xlab = "location parameter")
+#lines(-30:50, ll2_cauchy(data, -30:50), lty=3)
+
+```
+
+
+- **d.** (2 points) Apply the bisection method with starting points -1 and 1 (two seperate runs). The initial interval is $[a_0=-20, b_0=50]$. Repeat the iteration 50 times. 
+
+```{r}
+optim_bisect <- function(dg, left, right, x0, iter, data) {
+  
+  xtrace <- x <- x0 # initialize starting value
+ 
+  ## iterate
+  for(i in 1:iter){ 
+    
+    # test for peak and make new guess
+    if(dg(data, left) * dg(data, x) <= 0) right <- x else left <- x
+    xtrace[i+1] <- x <- (right + left) / 2 # midpoint
+  }
+  
+  # return both the final x, and history
+  return(list(final = x, trace = xtrace))
+}
+
+finals <- map_dbl(c(-1, 1), 
+              ~ optim_bisect(dg = ll1_cauchy, data = data,
+                                       left = -20, right = 50, x0 = .x, 
+                                       iter = 50)$final)
+
+cat(paste0("Bisection Method for Cauchy: Start = ", c(-1, 1), ", Converges to: ", round(finals, 3), collapse = "\n"))
+```
+
+- **e.** (2 points) Apply the Newton-Raphson method. Try the following starting values: $-11, -1, 0, 1.5, 4, 4.7, 7, 8, 38$. For each starting value, repeat the iteration 50 times. Discuss your results. Is the mean of the data point (5.16) a good starting point?
+
+```{r}
+optim_newtraph <- function(dg, d2g, data, x0, iter) {
+  
+  xtrace <- x <- x0 #initialize starting conditions
+  
+  ## iterate
+  for(i in 1:iter) xtrace[i+1] <- x <- x - dg(x)/d2g(x)
+  
+  return(list(final = x, trace = xtrace))
+  
+}
+
+map_dbl(c(-11, -1, 0, 1.5, 4, 4.7, 7, 8, 38), 
+    ~ optim_newtraph(dg = ll1_cauchy, d2g = ll2_cauchy, 
+               data = data, x0 = .x, iter = 50)$final) %>%
+  round(3)
+```
+
+
+- **f.** (2 points) Apply the fixed-point method where $x^{(t+1) = x^{(t)}+\alpha g'(x^{(t)})}$ where $g'(\cdot)$ is the derivative of the log-likelihood function. Let the starting value be $-1$ and scaling choices for $\alpha = 1, 0.64$ and 0.25. Again, repeat the iteration 50 times.
+
+```{r}
+optim_fixpt <- function(dg, data, x0, alpha, iter) {
+  
+  xtrace <- x <- x0 # initialize
+  
+  for(i in 1:iter) xtrace[i +1] <- x <- x + alpha * dg(x)
+  
+  return(list(final = x, trace = xtrace))
+  
+}
+
+map(c(1, .64, .25), 
+    ~ optim_fixpt(dg = ll1_cauchy, data = data, x0 = -1, alpha = .x, iter = 50)$final)
+
+```
+
+
+- **g.** (1 point) Use this example to compare the stability of the methods.
+
+Geez, all this makes me think something is very wrong here, with the calculation of my derivatives? Their implementation? Not sure. But the figures look good, so IDK. Anyway, if we're to trust these results, it shows the bisection method to converge quickly to one of the local optima near to the global optimum at -0.192. Very happy with that result. But both the Newton-Raphson method and fixed point iteration are an epic disaster. Newton Raphson is extremely sensitive to the initial conditions, and never converges to the optima. Fixed-point iteration leads to highly negative values, nowhere near the true optima. The scaling parameter does influence the results, but doesn't clearly help achieve better performance. NR and FP are both highly unstable and unreliable when the the likelihood is as complex and unsmooth as this Cauchy. Would it get smoother with more data?

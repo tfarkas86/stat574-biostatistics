@@ -1,0 +1,142 @@
+---
+title: "Quiz 2"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,eval=TRUE,warning=FALSE,message=FALSE)
+set.seed(101000)
+```
+Prostate cancer data
+===
+The dataset is a 506-patient prostate cancer dataset from a randomized trial comparing four treatments for stage 3 and 4 prostate cancer, with almost equal numbers of patients on placebo and each of three doses of estrogen. The goal of this case study is to learn about how treatment and baseline variables relate to the survival of the patients. The textbook gives a Cox regression case study about this dataset in chapter 21. In addition, this dataset is used for data reduction case study in chapter 8. The case study in Cox regression uses single imputations for all missing variables and very simple data reduction strategies. The resulting model has a moderate amount of over-fitting. Your task in this quiz is to improve the Cox regression case study by considering more comprehensive data reduction strategies and multiple imputation algorithms in Chapter 3. Note that the function `fit.mult.impute` can be used to combine multiply imputed datasets for `lrm, ols, cph, psm, bj, Rq, Gls, Glm`. Write an essay to describe your case study. Your written English should be clear, concise, organized, and free from grammar errors.
+
+```{r libraries}
+
+library(tidyverse)
+library(rms)
+library(Hmisc)
+library(magrittr)
+library(mice)
+
+```
+
+```{r data import and prep}
+getHdata(prostate)
+prostate_raw <- prostate
+
+# check ekg variable
+prostate_raw %>%
+  group_by(ekg) %>%
+  summarise(n())
+
+# check pf variable
+prostate_raw %>%
+  group_by(pf) %>%
+  summarise(n())
+  
+
+prostate %<>%
+  # lump levels for pf and ekg
+  mutate(across(ekg,
+                ~fct_collapse(.x, MI = c("old MI", "recent MI"))), 
+         across(pf, 
+                ~fct_collapse(.x, "in bed > 50% daytime" = 
+                                 c("in bed > 50% daytime", 
+                                   "confined to bed")))) 
+```
+
+```{r single imputation}
+
+si <- transcan(~ stage + rx + age + wt + pf + hx + sbp + dbp + ekg + hg + sz + sg + ap + bm, data = prostate, 
+               pl = FALSE, imputed = TRUE)
+
+prostate_si <- prostate
+prostate_si$sg <-impute.transcan(si, data=prostate, list.out=TRUE, pr=FALSE, check=FALSE)$sg
+```
+
+```{r redundancy and clustering}
+
+# redundancy analysis
+redun(~ stage + rx + dtime + status + age + wt + pf + hx + sbp + 
+        dbp + ekg + hg + sz + sg + ap + bm, 
+      r2 = 0.3, type = "adjusted", data = prostate)
+
+vc <- varclus(~ stage + rx + age + wt + pf + hx + sbp + dbp + ekg + hg + sz + sg + ap + bm, data = prostate_si)
+plot(vc)
+```
+
+```{r}
+pc1 <- princomp(~ ap + stage + sg, data = prostate_si)$scores[, 1]
+pc2 <- princomp(~ sbp + dbp, data = prostate_si)$scores[,1]
+
+prostate_reduce <- prostate_si %>%
+  select(-c(sg, stage, ap, sbp, dbp)) %>%
+  mutate(pc1 = pc1, 
+         pc2 = pc2)
+```
+
+
+```{r multiple imputation}
+
+prostate_reduce %<>%
+  mutate(surv = cut2(dtime, c(12, 24, 36, 48)))
+mi <- transcan(~ sz + age + wt + hg  + 
+                 ekg + pf + bm + hx + pc1 + pc2 + surv, 
+               data = prostate_reduce, 
+               imputed = T, pl = F, n.impute = 10)
+# mi <- aregImpute(~ sz + sg + ap + sbp + dbp + age + wt + hg  + 
+#                  ekg + pf + bm + hx + surv, data = prostate, 
+#                match = "weighted", boot.method="simple", burnin = 3, 
+#                type = "pmm", n.impute = 5)
+
+```
+
+```{r CPH}
+dd <- datadist(prostate_reduce)
+options(datadist = 'dd')
+S = Surv(prostate_reduce$dtime, prostate_reduce$status != "alive")
+
+ fit <- fit.mult.impute(S ~
+                       rx + rcs(age, 3) + rcs(wt, 3) + pf + hx + 
+                       ekg + rcs(hg, 3)  + rcs(sz, 3) + rcs(pc1, 3) +
+                       rcs(pc2, 3) + bm, 
+                     data = prostate_reduce, xtrans = mi, fitter = cph, 
+                     x = T, y = T)
+ 
+anova(fit)
+
+# check PH assumption
+
+z <- predict(fit, type = "terms")
+f.short <- cph(S ~ z, x = T, y = T)
+phtest <- cox.zph(f.short, transform = "identity", terms = FALSE)
+phtest
+
+validate(fit)
+```
+
+In this study, we aim to evaluate drivers of death from prostate cancer using a Cox proportional hazards model.
+
+Our sample contains death date and over a dozen predictors for 502 patients.  Predictors included an estrogen therapeutic treatment and a number of other covariates.
+
+Data preparation consisted of three steps. 
+
+First, two categorical variables, ekg and pf, had some factor levels with very few records, hence we combined the most sparsely populated level in each with the most appropriate similar level. For ekg, this meant combining records with "confined to bed" with "in bed > 50% of time", and for pf we combined all patients have both old and new myocardial infarctions under a single myocardial infarction level. 
+
+There were missing data in each of four variables, so we endeavored to use multiple imputation to complete the dataset. However, there were also a large number of variables and not a particularly large number of records, especially given our intention to use restricted cubic splines to model quantitative variables. Hence we endeavored also to perform data reduction. To accomplish both tasks, we first evaluated data field similarity and redundancy. We found no variables to have greater than 80% of variance explained by other variables, so did not delete any variables outright, but used hierarchical clustering to identify groups of variables to compress. We found two clusters best suited to data reduction. One of these groups had a field with missing data. Hence, we performed single imputation of only this field, sg. 
+
+Once sg was imputed, we used principle components analysis on the two clusters, extracting the first component for analysis of 1) stage, ap, and sg, and 2) sbp and dbp. We removed these variables from analysis, using these two principal components in their place. 
+
+Next, we performed multiple imputation to complete the entire dataset. Finally, we employed a Cox proportional hazards model to understand relationships between predictors and survival time for individuals in the study who died. We modeled all continuous variables as restricted cubic splines with 3 knots each. 
+
+We checked the proportional hazard assumption that the effects of predictors do not change through time, finding only a marginal effect of change for the drug treatment, at p = 0.07. 
+
+The results shows strong effects of most predictors, including drug (p = 0.037), age (p = 0.0021), wt (p = 0.0147), hx (p < 0.001), ekg (p = 0.0325), hg (p = 0.0018), sz (p = 0.0014), and pc1 (p = 0.0185). PC1 contained variation among the variables ap, stage, and sg. 
+
+The model validated relatively well, showing very little optimism in Dxy (0.052), and $R^2$ (0.077), but somewhat high optimism for the slope (0.225). Ultimately, this modeling approach did not substantially outperform the original model. 
+
+
+

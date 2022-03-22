@@ -1,0 +1,179 @@
+---
+title: "HW3"
+author: "Tim Farkas"
+date: "1/25/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,eval=TRUE,warning=FALSE,message=FALSE)
+set.seed(101000)
+setwd("~/Dropbox/3_Education/Courses/stat_574_biostats/code")
+```
+
+Data reduction for the dataset from the SUPPORT Study 
+===
+The SUPPORT Study (Study to Understand Prognoses Preferences Outcomes and Risks of Treatments) was a five-hospital study of 10,000 critically ill hospitalized adults. Patients were followed for in-hospital outcomes and for long-term survival. The goal of an analysis of the dataset is to discover patterns in
+survival using patient characteristics. We analyze these 35 variables and a sample of 1000 patients from the study. One observation with zero `totcst` is removed. Variables that measure the survival outcome and variables that have more than 40\% missing are also removed 
+```{r}
+library(readxl) #For reading in excel file
+library(plyr)#For the plyr function family
+library(tidyverse)#For data subsetting
+
+support <- read_excel(path="../supportsubset.xlsx")
+support <- support[!(support$totcst==0 & is.na(support$totcst)==FALSE),]
+supportsubset <- select(support,-c("death","hospdead","d.time","slos","urine","adlp","bun","glucose"))
+
+```
+- **1a.** (1 point) Use the following codes to produce descriptive statistics for all the variables. Use `print(d)` to see the summaries. Some of the categorical variables have low counts in certain levels. Lump some levels if needed, say if a level has less than 10% of the total number of observations. An example is shown below.
+```{r}
+library(rms)
+library(magrittr)
+d = describe(supportsubset)
+print(d) 
+# lump the levels 5, 6, 7 for num.co
+supportsubset$num.co = ifelse(supportsubset$num.co>=4,">=4",supportsubset$num.co)
+
+# lump hispanic, asian, and other races as "other"
+supportsubset %<>%
+  mutate(across(race, ~ ifelse(.x %in% c("asian", "hispanic", "other"), 
+                               "other", .x)))
+```
+
+I lumped hispanic and asian race with other. There are some other cases with sample small sample sizes, but I'm unclear on the differences between the values, so I don't want to lump them ... yet. 
+
+- **1b.** (1 point) Assume a linear model without interactions. For continuous predictors, use restricted cubic splines with four knots. How many parameters are to be estimated? Using the effective number of observations divided by 15 as a rule of thumb, can all parameters be reliably estimated? Notice that some variables have a lot of missing data. Let's ignore those for now since data imputation can be implemented after data reduction.
+
+```{r}
+#describe(supportsubset)
+cats <- c(2, 8, 5, 4, 5, 5)
+sum(cats - 1) # 23 df
+nquant <- 24 - length(cats)
+dfspline = nquant * 3
+dfspline + 23 # 77 df
+sum(complete.cases(supportsubset))
+```
+
+Fitting a model with all variables, using restricted cubic splines for quantitative variables, leads to the estimation of 77 parameters. If there are 999 records, (assuming we will impute missing values), the the rule of thumb indicates we can fit 67. We have too many!
+
+- **1c.** (1 point) The function `redun` below uses flexible parametric additive models to determine how well each variable can be predicted from the remaining variables.Variables are dropped in a stepwise fashion, removing the most predictable variable at each step. The remaining variables are used to predict. The process continues until no variable still in the list of predictors can be predicted with an $R^2$ greater than 0.3 or until dropping the variable with the highest $R^2$ would cause a variable that was dropped earlier to no longer be predicted at least at the 0.3 level from the now smaller list of predictors. If variables that can be predicted with a $R^2$ greater than 0.8 are to be removed, what varibles do you suggest to remove? Write a data step to remove those variables. For example, to remove `dzclass`, simply write `supportsubest$dzclass = NULL`.
+
+```{r}
+#supportsubset.complete = na.omit(supportsubset)
+#paste(supportsubset$colnames,collapse="+")
+redun(~age+sex+dzgroup+dzclass+num.co+edu+income+scoma+charges+totcst+totmcst+avtisst+race+meanbp+wblc+hrt+resp+temp+pafi+alb+bili+crea+sod+ph+sfdm2+adlsc, r2=.3, type= 'adjusted' , data=supportsubset)
+
+# remove variables with R-sq higher than 0.8
+supportsubset %<>% 
+  select(-c(dzclass, charges, totcst))
+```
+
+I removed `dzclass`, `charges`, and `totcst` due to redundancy at $R^2 \ge 0.8$.
+
+- **1d.** (1 point) The following code perform a hierarchical clustering analysis for noncategorical variables using Hoeffding D statistics (https://documentation.sas.com/?cdcId=pgmsascdc&cdcVersion=9.4_3.5&docsetId=procstat&docsetTarget=procstat_corr_details07.htm&locale=en) to calculate a similarity matrix. Modify the codes to remove the variables that were determined to be redundant. What variables do you suggest combining? What results do you observe if categorical variables are included in the clustering analysis?
+
+```{r}
+library(Hmisc)
+vc <- varclus(~age+as.numeric(num.co)+edu+sex+ +scoma+totmcst+avtisst+meanbp+wblc+hrt+resp+temp+pafi+alb+bili+crea+sod+ph+adlsc , sim= 'hoeffding' , data =supportsubset )
+plot (vc)
+```
+
+Using Hoeffding's D, it looks lie `totmcst` and `avtisst` are very similar. Categorical variables become numericalized with dummy variables, and r-1 variables are included in the dendrogram. 
+
+- **1e.** (1 point) Use principle component analysis to combine the variables you decided to combine from step 1f. The following codes produces principle component scores for combining `totmcst`, `charges`, `totcst`, and `avtisst`. Notice PC1 (comp.1) and PC2 (comp.2) together explains 94\% of the variation of the four variables. We can use these two scores to replace the orginal four analysis.
+
+```{r}
+prin.raw <- princomp(~totmcst+avtisst,cor=TRUE , data =supportsubset)
+plot (prin.raw, type = 'lines' , main = '' , ylim =c(0,3))
+#Add cumulative fraction of variance explained
+addscree<-function (x, npcs=min(10, length (x$sdev )),
+plotv =FALSE ,col=1, offset =.8 , adj=0, pr=FALSE ) {
+vars <- x$sdev^2
+cumv <- cumsum (vars)/sum(vars)
+if(pr) print (cumv )
+text (1:npcs , vars [1: npcs] + offset *par( 'cxy' )[2] ,
+as.character (round (cumv [1: npcs ], 2)),
+srt=45, adj=adj , cex=.65 , xpd=NA , col=col)
+if(plotv ) lines (1:npcs , vars [1: npcs ], type = 'b' , col=col)
+}
+addscree (prin.raw )
+
+# principle components for atisst and totmcst
+# prin.raw <- princomp(~totmcst+avtisst,cor=TRUE , data =supportsubset)
+# plot (prin.raw, type = 'lines' , main = '' , ylim =c(0,3))
+
+```
+
+For this one, I modified the given code, since some of the variables previously included are now excluded. 
+
+Simulation study
+===
+In this problem, we perform a simulation study to understand the calculation of enhanced bootstrap validation method for linear regression models. 
+
+**2a.** (1 point) Describe the enhanced bootstrap validation method.
+
+The enhanced bootstrap method is a more indirect than the simple bootstrap, in which measures of model performance (e.g., $R^2$) are averaged across bootstrap samples. Instead, you independently construct models with each of k bootstrap samples, refit the model to the original sample data, to get two estimates of model performance for each of k bootstrap samples. One estimate for a fit on the bootstrap data, and one on the original data. The difference between these two estimates is itself an estimate of "optimism", which you average over the k bootstraps, and subtract from the estimate of performance for a model constructed and fit on the original sample.
+
+**2b.** (1 point) The following codes provide a function for generating a sample data where
+    - $n$ is sample size
+    - $x$ is a vector of $p$ covariates, each sampling from an uniform distribution over the range $[-0.5, 0.5]$
+    - $\beta$ is the vector of coefficients, set as 0.5 for all of them
+    - $y$ is the response variable where the mean is a linear combination of the covariates
+Use the sample to generate a dataset of $200$ observation and 15 covariates. Use `head()` function to print out the first few rows. 
+```{r}
+set.seed(1)
+datagen = function(n, p){
+  x = matrix(runif(n*p),ncol=p,nrow=n)-0.5 #each row is x for an observation
+  beta = rep(0.5,p)
+  y = x%*%beta+rnorm(n,0,0.5)
+  return(data.frame(x,y))
+}
+
+dd <- datagen(200, 15)
+head(dd)
+```
+
+**2b.** (1 point) The following codes draw a sample with replacement also of size $n$ from the original sample and fit an additive linear model to the bootstrap sample and use it predict the outcomes in the original sample and bootstrap sample. For both set of outcomes, $R^2$ are computed and finally an estimate of optimism is outputed (the difference of the two $R^2$). Use the sample data you generate from step 2a, call the function `optimism` multiple times and print the output.
+
+```{r}
+origsample = datagen(150,15)
+optimism = function(origsample){
+  n = dim(origsample)[1] #sample size
+  bootsample = origsample[sample.int(n, size = n, replace=TRUE),]
+  fit = lm (y~.,data = bootsample)
+  pred.boot.sample = predict(fit)
+  pred.orig.sample = predict(fit,newdata = select(origsample,!"y"))
+  R2bootsample = cor(pred.boot.sample,bootsample$y)^2
+  R2origsample = cor(pred.orig.sample,origsample$y)^2
+  optesti = R2bootsample- R2origsample
+  return(optesti)
+}
+optimism(origsample)
+optimism(origsample)
+optimism(origsample)
+```
+
+**2c.** (1 point) Repeat the calling of the `optimism` function in 2b for 100 times and obtain an average optimism. You may need to write a loop to achieve this.
+
+```{r}
+opt <- mean(map_dbl(1:100, ~ optimism(origsample))) # 0.0647
+print(opt)
+```
+
+
+**2d.** (1 point) Fit an additive linear model to the original dataset in step 2a and compute the $R^2$.
+
+```{r}
+fit <- summary(lm(y ~ ., data = dd))
+fit$r.squared # 0.579
+```
+
+
+**2e.** (1 point) Subtract the average optimsim from the $R^2$ in step 2d to obtain the overfitting-corrected estimate.
+
+```{r}
+fit$r.squared -opt # 0.5077
+```
+

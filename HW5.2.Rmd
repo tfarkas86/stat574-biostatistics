@@ -1,0 +1,172 @@
+---
+title: "HW5"
+author: "Tim Farkas"
+date: "4/30/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,eval=TRUE,warning=FALSE,message=FALSE)
+set.seed(101000)
+#setwd("~/Dropbox/3_Education/Courses/stat_574_biostats/code/")
+
+```
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(Hmisc)
+library(rms)
+```
+
+Analyze the Mayo Clinic PBC dataset.
+===
+
+The Mayo Clinic conducted a randomized trial in primary biliary cirrhosis
+(PBC) of the liver between January 1974 and May 1984, to compare Dpenicillamine
+with placebo. The drug was found to be ineffective, and the trial was done before liver transplantation was common, so this trial constitutes a natural history study for PBC. Follow-up continued through
+July 1986. For the 19 patients that did undergo a transplant, follow-up time was
+censored (status=0) on the day of the transplant.
+
+
+1. (1 point) Make graphs of Altschuler–Nelson or Kaplan–Meier survival estimates stratified separately by a few categorical predictors and by categorized versions of one or two continuous predictors. Note that the survival outcome is `fu.days` (time to death or liver transplant) and the censoring indicator is `status`. The following codes give Kaplan–Meier survival estimates stratified by stage.
+```{r}
+
+getHdata(pbc)
+dd<-datadist(pbc)
+S<-Surv(pbc$fu.days,pbc$status)
+
+
+
+# by stage
+survplot(npsurv(S ~ stage, data=pbc),
+         conf='none',type="kaplan-meier",logt=TRUE)
+
+# by spider (veins?)
+survplot(npsurv(S ~ spiders, data=pbc),
+         conf='none',type="kaplan-meier",logt=TRUE)
+
+# by hepatoma
+survplot(npsurv(S ~ hepatom, data=pbc),
+         conf='none',type="kaplan-meier",logt=TRUE)
+
+## bin continuous variables
+pbc %<>%
+  mutate(alk.phos.ctgy = cut(alk.phos, 
+                             breaks = quantile(alk.phos,
+                                               c(0, .33, .66, 1), 
+                                               na.rm = TRUE), 
+                             labels = c("low", "med", "high")), 
+         sgot.ctgy = cut(sgot, 
+                             breaks = quantile(sgot,
+                                               c(0, .33, .66, 1), 
+                                               na.rm = TRUE), 
+                             labels = c("low", "med", "high")), 
+         chol.ctgy = cut(chol, 
+                             breaks = quantile(chol,
+                                               c(0, .33, .66, 1), 
+                                               na.rm = TRUE), 
+                             labels = c("low", "med", "high")))
+# by alk phos
+survplot(npsurv(S ~ alk.phos.ctgy, data=pbc),
+         conf='none',type="kaplan-meier",logt=TRUE)
+
+# by sgot
+survplot(npsurv(S ~ sgot.ctgy, data=pbc),
+         conf='none',type="kaplan-meier",logt=TRUE)
+
+# by chol
+survplot(npsurv(S ~ chol.ctgy, data=pbc),
+         conf='none',type="kaplan-meier",logt=TRUE)
+```
+2. (2 points) Graphically assess whether Weibull (extreme value), loglogistic, or log-normal distributions will fit the data.  Specifically, assess the extreme value/logistic/normal inverse Kaplan-Meier estimates stratified by each categorical predictor. Note that the CDF of a standard extreme value distribution is $F(t) = e^{-e^t}$ and the CDF of a standard logistic distribution is $F(t)=\frac{e^t}{1+e^t}$.
+```{r}
+## stage
+survplot(npsurv(S ~ stage,data=pbc),conf='none',fun=qnorm,logt=TRUE)#normal
+survplot(npsurv(S ~ stage,data=pbc),conf='none',fun=qlogis,logt=TRUE)#logistic
+survplot(npsurv(S ~ stage,data=pbc),conf='none',fun=function(y)-log(-log(y)),logt=TRUE) #extreme value distribution 
+
+## spiders
+survplot(npsurv(S ~ spiders,data=pbc),conf='none',fun=qnorm,logt=TRUE)#normal
+survplot(npsurv(S ~ spiders,data=pbc),conf='none',fun=qlogis,logt=TRUE)#logistic
+survplot(npsurv(S ~ spiders,data=pbc),conf='none',fun=function(y)-log(-log(y)),logt=TRUE) #extreme value distribution 
+
+## hepatoma
+survplot(npsurv(S ~ hepatom,data=pbc),conf='none',fun=qnorm,logt=TRUE)#normal
+survplot(npsurv(S ~ hepatom,data=pbc),conf='none',fun=qlogis,logt=TRUE)#logistic
+survplot(npsurv(S ~ hepatom, data=pbc),conf='none',fun=function(y)-log(-log(y)),logt=TRUE) #extreme value distribution 
+
+```
+
+For categorical variables `stage` and `spiders`, all three distributions appear to fit reasonably well, as evidenced by fairly linear survival plots for all categories. For `hepatom`, the fits are not as good, especially when hepatoma is present, and especially for normal and logistic fits. The extreme value distribution appears to fit best in this case, but still not great!
+
+3. (1 point) Some of the patients' physical characteristics are missing. For simplicity, single imputation is used to impute all the missing values without assuming linearity or monotonicity of any of the regressions. Please finish the following codes to update the pbc dataset. 
+```{r}
+plot(naclus(pbc))
+vsign.trans <- transcan(~ copper+platelet+chol+trig+sgot+alk.phos+ascites+spiders+hepatom , data =pbc, imputed=TRUE , pl=FALSE )
+pbc <-transform(pbc,
+                copper=impute(vsign.trans,copper, data = pbc), 
+                platelet=impute(vsign.trans,platelet, data = pbc), 
+                chol=impute(vsign.trans,chol, data = pbc), 
+                trig=impute(vsign.trans,trig, data = pbc), 
+                sgot=impute(vsign.trans,sgot, data = pbc), 
+                alk.phos=impute(vsign.trans,alk.phos, data = pbc), 
+                ascites=impute(vsign.trans,ascites, data = pbc), 
+                spiders=impute(vsign.trans,spiders, data = pbc), 
+                hepatom=impute(vsign.trans,hepatom, data = pbc))
+
+```
+4. (2 points) For the best fitting parametric distribution from among the three examined,
+fit an accelerated failure time model containing all categorical and continuous variables. For continuous factors, use restricted cubic splines to model their nonlinear effects. You may use a saturated model to help you decide how many knots to use for the continuous predictors. 
+
+```{r}
+log.S<-Surv(log(pbc$fu.days),pbc$status)
+
+an1 <- psm(log.S ~ 
+                 rcs(bili, 4) + rcs(albumin, 4) + 
+                 stage + rcs(protime, 4) + sex + rcs(age, 4) + spiders +
+                 hepatom + ascites + rcs(alk.phos, 4) + 
+                 rcs(sgot, 4) + rcs(chol, 4) + rcs(trig, 4) + 
+                 rcs(platelet, 4) + drug + edema + rcs(copper, 4), 
+               data = pbc)
+
+#an1
+```
+
+5. (2 points) Do a Wald test for whether each factor in the model has an
+association with survival time, and a likelihood ratio test for the simultaneous
+contribution of all predictors. For classification factors having more
+than two levels, be sure that the Wald test has the appropriate degrees
+of freedom. Comment on the results.
+
+```{r}
+anova(an1)
+an1
+```
+
+The Wald statistics show a significant effect of `bili`, `stage`, `protime`, `age`, and `ascites` at $\alpha = 0.05$, and marginal effects of `albumin` and `trig` at $\alpha = 0.1$. The degrees of freedom for `drug` and `edema` are both = 2, which is correct, given three levels in both factors. 
+
+The likelihood ratio test show a highly significant effect of the model parameters as whole, with a $\chi^2$ of 265 on 39 degrees of freedom.  
+
+
+6. (2 points) Perform validation for the model developed in step 2. Comment on the results.
+
+```{r}
+#par(mfrow=c(3, 6))
+plot(anova(an1), ref.zero=TRUE)
+# plot(summary(an1)) ## hmm throws an error
+
+g <- update(an1, x=TRUE, y=TRUE)
+validate(g, B=50, dxt=TRUE)
+
+
+cal <- calibrate(fit = g, 
+                 u = median(log(pbc$fu.days)), 
+                 m = 60)
+plot(cal)
+```
+
+Validation statistics demonstrate moderate optimism in predictive ability based on `Dxy`, and rather severe optimism in $R^2$, intercept, and slope. The graphical comparison of corrected vs. empirical relationships between predicted and observed survival demonstrate a strong deviation, suggesting overfitting is likely a problem here. I just chucked 4 knots into each quantitative preditor, maybe I should play with that to see whether we can validate a data set with fewer predictors. 

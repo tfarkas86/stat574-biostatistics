@@ -1,6 +1,7 @@
 # RMarkdown files
 *.html
 *.pdf
+*.log
 
 # History files
 .Rhistory

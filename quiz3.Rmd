@@ -1,0 +1,238 @@
+---
+title: "Stat 590 Quiz 3"
+author: "Tim Farkas"
+date: "5/3/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The total credit of this quiz is 10 points. You must submit **your own** lab as an knitted pdf file. To answer the questions, display the results and write your comments if asked.
+
+
+```{r}
+## For reproducibility --- don't change this!
+set.seed(01182018)
+library(tidyverse)
+```
+Instructions
+===
+Maximization algorithm problems are required for everyone. Between the EM algorithm and the Metropolis-Hasting algorithm problem, you may choose one.
+
+Maximization algorithms
+===
+Consider the density $f(x) = [1-cos(x-\theta)]/2\pi$ on $0\leq x \leq 2\pi$, where $\theta$ is a parameter between $-\pi$ and $\pi$. The following i.i.d data arise from this density: 3.91, 4.85, 2.28, 4.06, 3.70, 4.04, 5.46, 3.53, 2.28, 1.96, 2.53, 3.88, 2.22, 3.47, 2.22, 3.47, 4.82, 2.46, 2.99, 2.54, 0.52, 2.50. We wish to estimate $\theta$.
+
+- **1a.** (1 point) Write down the loglikelihood and graph the loglikelihood function.
+
+$$Loglik(\theta) = - nlog(2\pi) + \sum_{i = 1}^nlog(1 - cos(x_i - \theta))$$
+$$\sum-\frac{sin(x - \theta)}{[1 - cos(x - \theta)]}$$
+
+```{r}
+ll.1a <- function(x, theta) -length(x) * log(2 * pi) + sum(log(1 - cos(x - theta)))
+x <- c(3.91, 4.85, 2.28, 4.06, 3.70, 4.04, 5.46, 3.53, 2.28, 1.96, 2.53, 3.88, 2.22, 3.47, 2.22, 3.47, 4.82, 2.46, 2.99, 2.54, 0.52, 2.50)
+y <- 
+
+gg <- tibble(theta = seq(-pi, pi, len = 100), 
+       y = map_dbl(seq(-pi, pi, len = 100), 
+                   ~ ll.1a(x = x, theta = .x))) %>%
+  ggplot() + 
+  geom_line(aes(x = theta, y = y))
+
+print(gg)
+```
+
+
+- **1b.** (1 point) Write down the bisection updating equation and write R codes to implement the bisection method, with starting values $-2.7, -1, 0, 1, 2.7$. 
+
+$$[a_{t+1}, t_{t+1}] = \begin{array}{ll}
+            [a_t, x^{(t)}]& \quad g'(a_t)g'(x^{(t)}) \le 0 \\
+            [x^{(t)}, b_t]& \quad g'(a_t)g'(x^{(t)}) \gt 0
+        \end{array}$$
+where
+
+$$g'(x, \theta) = -\frac{sin(x - \theta)}{[1 - cos(x - \theta)]}$$
+and 
+
+$$x^{(t+1)} = (a_{t+1} + b_{t+1}) / 2$$
+```{r}
+optim_bisect <- function(x, gprime, start = -1, 
+                         left = -pi, right = pi, epsilon = .01, 
+                         adj = FALSE) {
+  
+  err = epsilon + 1
+  xt_vec = start
+  
+  while(err > epsilon) {
+    
+    slope <- gprime(x, left) * gprime(x, xt_vec[length(xt_vec)])
+    if(slope <= 0) { right <- xt_vec[length(xt_vec)] 
+    } else left <- xt_vec[length(xt_vec)]
+    xt_vec[length(xt_vec) + 1] <- if(adj) left + ( right - left) / 2 else (left + right) / 2
+    err <- abs(xt_vec[length(xt_vec)] - xt_vec[length(xt_vec) - 1]) /
+      (abs(xt_vec[length(xt_vec)]) + epsilon)
+    
+    
+  }
+  
+  return(xt_vec)
+  
+}
+
+
+gprime <- function(x, theta) sum(-sin(x - theta) / 
+                                   (1 - cos(x - theta)))
+
+starts <- c(-2.7, -1, 0, 1, 2.7)
+
+map(starts, ~ optim_bisect(x = x, gprime = gprime, 
+             left = -pi, right = pi, start = .x, 
+             epsilon = 0.001, adj = TRUE) 
+) %>%
+  map_dbl(~ .x[length(.x)])
+
+```
+
+- **1c.** (1 point) Write down the Newton Rapson updating equation and write R codes to implement the method, with starting values $-2.7, -1, 0, 1, 2.7$. 
+
+$$x^{(t+1)} = x^{(t)} - \frac{g'(x^{(t)})}{g''(x^{(t)})}$$
+
+Where 
+
+$$g''(x, \theta) = 
+\frac{1}{1 - cos(x - \theta)}$$
+```{r}
+optim_newtraph <- function(dg, d2g, x, theta0, iter) { 
+  
+  thetatrace <- theta <- theta0 #initialize starting conditions
+  
+  ## iterate
+  for(i in 1:iter) {
+    thetatrace[i+1] <- theta <- theta - dg(x, theta)/d2g(x, theta)
+    if(is.nan(theta)) {
+      thetatrace <- thetatrace[-length(thetatrace)]
+      theta <- thetatrace[length(thetatrace)]
+      break
+    }
+  }
+  return(list(final = theta, trace = thetatrace)) 
+  
+}
+
+g2prime <- function(x, theta) sum(1 / (1 - cos(x - theta))) 
+
+map(starts, ~ optim_newtraph(dg = gprime, d2g = g2prime, 
+                             x = x, theta0 = .x, iter = 100)
+) %>% 
+  map_dbl(~ .x$final)
+
+```
+
+- **1d.** (1 point) Repeat part c using 200 equally spaced starting values between $-\pi$ and $\pi$. 
+
+```{r}
+map(seq(-pi, pi, len=200), ~ optim_newtraph(dg = gprime, d2g = g2prime, 
+                             x = x, theta0 = .x, iter = 100)
+) %>% 
+  map_dbl(~ .x$final) %>%
+  tibble(start = seq(-pi, pi, len=200), estimate = .) %>%
+  ggplot() + 
+  geom_line(aes(x = start, y = estimate))
+
+```
+
+- **1e.** (1 point) Discuss your results from b-d.
+
+This is an extremely lumpy likelihood with many local maxima, so it's not surprising that the results are strongly dependent on starting values. The difference between methods makes sense as well, since the successive iterations in each will push the algorithm into different zones, each with different optima, because there are SO many. 
+
+EM algorithm
+===
+Recall the peppered moth analysis introduced in Example 4.2. In the field, it is quite difficult to distinguish the insularia and typica pheotypes due to variations in wing color and mottle. In addition to the 622 moths mentioned in the example, suppose the sample collected by the researchers actually included $n_U= 578$ more moths that were known to be `insularia` or `typical` but whose exact pheotypes could not be determined. 
+
+- **2a.** (2.5 points) Derive the EM algorithm for maximum likelihood estimation of $p_C, p_I,$ and $p_I$ for this modified problem having observed data $n_C, n_I, n_T$, and $n_U$ as given above. The derivation include writing down the Q function, the E step, and the M step.
+
+Expectations for *carbonaria* are as in Example 4.2.
+Expectations for *insularia* and *typica* should be ... 
+
+$$E(N_{II}|\mathbf{n}, \mathbf{p}) = n_{II}^{(t)} =
+\frac{n_Ip_I^2}{p_I^2 + 2p_Ip_T} + 
+\frac{n_Up_I^2}{p_I^2 + 2p_Ip_T + p_T^2}
+$$
+$$E(N_{IT}|\mathbf{n}, \mathbf{p}) = n_{IT}^{(t)} = 
+\frac{2n_Ip_Ip_T}{p_I^2 + 2p_Ip_T} + 
+\frac{2n_Up_Ip_T}{p_I^2 + 2p_Ip_T + p_T^2}
+$$
+$$E(N_{TT}|\mathbf{n}, \mathbf{p}) = n_{TT}^{(t)} = 
+nT + 
+\frac{n_Up_T^2}{p_I^2 + 2p_Ip_T + p_T^2}
+$$
+$$Q(\mathbf{p}|\mathbf{p}^t) = 
+n_{CC}^{(t)}log(p_C^2) +
+n_{CI}^{(t)}log(2p_Cp_I) +
+n_{CT}^{(t)}log(p_Cp_T) +
+n_{II}^{(t)}log(p_I^2) +
+n_{IT}^{(t)}log(2p_Ip_T) +
+n_{TT}^{(t)}log(p_T^2) +
+k(n_C, n_I, n_T, n_U, \mathbf{p}^{(t)})$$
+
+The only differences here from example 4.2 is that $n_{TT}$ is not observed, because some TT alleles exist in the unknown samples, and the conditional expectation for the multinomial coefficient depends also on $n_U$. 
+
+The M step is also the same as in the book. It's the expectations for $N_II$, $N_IT$, and $N_TT$ that differ. 
+
+- **2b.** (2.5 points) Write R codes to implement the algorithm.
+
+```{r}
+# ugh don't look this is so ugly. 
+nCCt <- function(nC, pC, pI, pT) nC*pC^2 / (pC^2 + 2*pC*pI + 2*pC*pT)
+nCIt <- function(nC, pC, pI, pT) nC*2*pC*pI / (pC^2 + 2*pC*pI + 2*pC*pT)
+nCTt <- function(nC, pC, pI, pT) nC*2*pC*pT / (pC^2 + 2*pC*pI + 2*pC*pT)
+nIIt <- function(nI, nU, pI, pT) nI * pI^2 / (pI^2 + 2*pT*pI) + nU * pI^2 / (pI^2 + 2*pI*pT + pT^2)
+nITt <- function(nI, nU, pI, pT) nI * 2*pI*pT / (pI^2 + 2*pT*pI) + nU * 2*pI*pT / (pI^2 + 2*pI*pT + pT^2)
+nTTt <- function(nT, nU, pI, pT) nT + nU * pT^2 / (pI^2 + 2*pI*pT + pT^2)
+
+pC_next <- function(nC, nI, nT, nU, pC, pI, pT, n) {
+  (2*nCCt(nC, pC, pI, pT) + nCIt(nC, pC, pI, pT) + nCTt(nC, pC, pI, pT))/(2*n)
+}
+
+pI_next <- function(nC, nI, nT, nU, pC, pI, pT, n) {
+  (2*nIIt(nI, nU, pI, pT) + nITt(nI, nU,pI, pT) + nCIt(nC, pC, pI, pT))/(2*n)
+}
+
+pT_next <- function(nC, nI, nT, nU, pC, pI, pT, n) {
+  (2*nTTt(nT, nU, pI, pT) + nCTt(nC, pC, pI, pT) + nITt(nI, nU,pI, pT))/(2*n)
+}
+
+enns <- tibble(nC = 85, nI = 196, nT = 341, nU = 622)
+#enns <- tibble(nC = 85, nI = 196, nT = 341, nU = 0) # old 
+
+pees <- tibble(pC = 0.33, pI = 0.33, pT = 0.33) %>% as.matrix()
+i = 1
+Rcrit = 0.001
+R = Rcrit + 1
+while(R > Rcrit) {
+  pees <- rbind(pees, c(pC_next(enns$nC, enns$nI, enns$nT, enns$nU, 
+                                pees[i, 1], pees[i, 2], pees[i, 3], n = sum(as.matrix(enns))), 
+                        pI_next(enns$nC, enns$nI, enns$nT, enns$nU, 
+                                pees[i, 1], pees[i, 2], pees[i, 3], n = sum(as.matrix(enns))), 
+                        pT_next(enns$nC, enns$nI, enns$nT, enns$nU, 
+                                pees[i, 1], pees[i, 2], pees[i, 3], n = sum(as.matrix(enns)))))
+  i = i+1
+  R = sqrt(sum((pees[i,] - pees[i - 1,])^2)) / sqrt(sum(pees[i - 1,]))
+  
+}
+
+```
+
+
+Metropolis-Hasting algorithm
+===
+Simulating from a mixture distribution $\delta N(7, 0.5^2)+(1-\delta)N(10, 0.5^2)$ is straightforward. However, using the Metropolis-Hasting algorithm to simulate realizations from this distribution is useful for exploring the role of the proposal distribution.
+
+- **3a.** (1 point) Write down a Metropolis-Hasting algorithm to simulate from the mixture distribution with $\delta=0.7$, using $N(x^{(t)},0.01^2)$ as the proposal distribution.
+- **3b.** (2 points) Write R codes to implement the Metropolis-Hasting algorithm. For each of the three starting values, $x^{(0)}=0, 7, 15$, run the chain for 10,000 iterations. 
+- **3c.** (1 point) Plot the sample path of the output from each chain. What would you conclude about the chains? For each of the simulations, create a histogram of the realizations with the true density superimposed on the histogram. Based on the histograms, what can you say about the behavior of the chains?
+- **3d.** (1 point) Experiment on variance of the proposal distribution to improve the convergence properties of the chains.

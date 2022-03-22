@@ -1,0 +1,156 @@
+---
+title: "Quiz 1"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,eval=TRUE,warning=FALSE,message=FALSE)
+set.seed(101000)
+```
+The PBC Study.
+===
+The Mayo Clinic conducted a randomized trial in primary biliary cirrhosis
+(PBC) of the liver between January 1974 and May 1984, to compare Dpenicillamine
+with placebo. The drug was found to be ineffective, and the trial was done before liver transplantation was common, so this trial constitutes a natural history study for PBC. Followup continued through July, 1986. 312 patients were randomized,
+and another 106 patients were entered into a registry. The nonrandomized
+patients have most of their laboratory values missing, except for bilirubin,
+albumin, and prothrombin time. 28 randomized patients had both serum
+cholesterol and triglycerides missing. The data, which consist of clinical, biochemical, serologic, and histologic information, are listed in references (see chapter 8 problems). Use only the data on randomized patients for all analyses. For the following problems, ignore followup time, status, and drug
+
+```{r}
+library(readxl) #For reading in excel file
+#library(plyr)#For the plyr function family
+library(tidyverse)#For data subsetting
+
+pbc <- read_excel("../pbc.xlsx")
+pbc.rd1 = select(subset(pbc,drug!="not randomized"),-c("fu.days","status","drug"))
+pbc.rd1$stage = as.factor(pbc.rd1$stage)
+
+# my preferred approach, same results
+pbc.rd <- pbc %>%
+  filter(drug != "not randomized") %>%
+  select(-c(fu.days, status, drug)) %>%
+  mutate(across(stage, ~ factor(.x)))
+
+```
+
+
+- **a.** (2 points) Describe the variables in the dataset. Assume that a linear survival model without interactions will be fitted in the future. For continuous predictors, use restricted cubic splines with four knots. Do any categorical variables needed to lump the counts in certain categories? How many parameters are to be estimated? Using the effective number of observations divided by 15 as a rule of thumb, can all parameters be reliably estimated?
+
+```{r, results = FALSE}
+library(rms)
+
+describe(pbc.rd)
+```
+
+There are 16 variables and 312 observations, 10 of which are continuous, and 6 are categorical. In general, not much data is missing, except for cholesterol and triglycerides, each of which are missing about 30 records. 
+
+There is some category imbalance for some variables:`stage = 1` has only 16 records, so could maybe be lumped with `stage = 2`. 89% of patients are female, so perhaps we could lumps sexes, which is the same as excluding the variable for sex. `spiders` shows some imbalance, but with 90 patients showing `present`, I think it's OK. `ascites` shows pretty severe imbalance, with on 7.7% `present`. Similar to sex, we could remove this variable from analysis. Lastly, `edema` shows imbalance, with each of the positive cases (w/ and w/o diuretic therapy) both below 10% of the total records. Lumping them brings the positive cases up to 15%, so let's do that. 
+
+If we lump stages 1 and 2, remove `ascites` from analysis, and lump both positive cases of edema that leads to 16 parameters plus the intercept. With an effective sample size of 125, 312/15 is 8.33, so by this rule of thumb we really should attempt some data reduction!
+
+- **b.** (2 points) Assess if any redundant variables in the dataset. Use $R^2 = 0.95$ as a cut-off. 
+
+```{r}
+redun(~ ., pbc.rd, r2 = .3)
+```
+
+No $R^2$ values are below 0.6, so we needn't remove variables out of concern for collinearity.
+
+- **c.** (2 points) Do an initial variable clustering based on ranks, i.e. using spearman correlation for the similarity matrix, and using pairwise deletion of
+missing data. Comment on the potential for one-dimensional summaries of
+subsets of variables being adequate summaries of prognostic information.
+
+```{r, fig.height = 14}
+vc <- varclus(~ ., data = pbc.rd, trans = "abs")
+plot(vc)
+```
+
+```{r}
+prin.raw <- princomp(~bili + copper + sgot,cor=TRUE , data =pbc.rd)
+plot (prin.raw, type = 'lines' , main = '' , ylim =c(0,3))
+#Add cumulative fraction of variance explained
+addscree<-function (x, npcs=min(10, length (x$sdev )),
+plotv =FALSE ,col=1, offset =.8 , adj=0, pr=FALSE ) {
+vars <- x$sdev^2
+cumv <- cumsum (vars)/sum(vars)
+if(pr) print (cumv )
+text (1:npcs , vars [1: npcs] + offset *par( 'cxy' )[2] ,
+as.character (round (cumv [1: npcs ], 2)),
+srt=45, adj=adj , cex=.65 , xpd=NA , col=col)
+if(plotv ) lines (1:npcs , vars [1: npcs ], type = 'b' , col=col)
+}
+addscree (prin.raw )
+```
+
+`bili`, `copper` and `sgot` form a cluster, so we could try to combine them with principal components. The first principal component from this combination explains 60% of variation among them. It's not bad, but there's still a fair amount of variation left over. I might be inclined to use the first two, which gets to 84% of variation, but it doesn't result in all that much data reduction. We should continue this process with a number of other clusters to try and get our parameters down. 
+
+
+- **d.** (2 points) `cholesterol`, `triglycerides`, `platelets`, and `copper` are missing on some patients. Use predictive mean matching to multiply impute these variables 10 times per missing observation. For each of the four variable, describe graphically the distributions of imputed values and compare these to the distribution of non-imputed values.
+
+```{r, results = FALSE}
+pbc.pmm <- aregImpute(~ bili + albumin + stage + protime 
+                      + copper + sex + age + spiders + hepatom 
+                      + ascites + alk.phos + sgot + chol +
+                      + trig + platelet + edema + copper,
+                      data = pbc.rd, type = "pmm", n.impute = 10)
+
+## transform and combine imputed / original data for plotting
+pbc.rd %>%
+  select(chol, trig, platelet, copper) %>% # imputed vars only
+  drop_na() %>% 
+  mutate(imp_ind = "original") %>%
+  pivot_longer(chol:copper, # reshape to long format
+               names_to = "variable", 
+               values_to = "value") %>%
+  
+  # concatenate with imputed data
+  bind_rows(map_df(c("chol", "trig", "platelet", "copper"), 
+       ~ {
+         tibble(imp_ind="imputed", 
+                variable = .x, 
+                value = c(pbc.pmm$imputed[[.x]])) # extract
+       })) %>% 
+  
+  # plot histograms 
+  ggplot() + 
+  stat_density(aes(x = value, color = imp_ind), 
+               geom = "line", position = "identity") + 
+  facet_wrap(~ variable, scales = "free")
+  
+```
+
+Here, the distributions look pretty good, especially for cholesterol and triglycerides, for which there were 30 imputed values for each of 10 imputations. There's a slightly shorter tail in the imputed data for cholesterol than for the observed data. Results for copper and platelet are not bad. Copper shows some instability in the imputed data, and a shorter tail as with cholesterol. Platelet shows a severely fatter tail for imputed data, but subsequent runs with different random number generation indicate this is due to instability -- sometimes it's there, and sometimes it isn't. 
+
+- **e.** (2 points) Use the Multivariate Imputations by Chained Equations (MICE) method to multiply impute `cholesterol`, `triglycerides`, `platelets`, and `copper`. Describe graphically the distributions of imputed values and compare these to the distribution of non-imputed values.
+
+```{r, results = FALSE}
+library(mice)
+
+pbc.mice <- mice(data = pbc.rd, m = 10)
+
+pbc.rd %>%
+  select(chol, trig, platelet, copper) %>%
+  drop_na() %>%
+  mutate(imp_ind = "original") %>%
+  pivot_longer(chol:copper, 
+               names_to = "variable", 
+               values_to = "value") %>%
+  bind_rows(map_df(c("chol", "trig", "platelet", "copper"), 
+       ~ {
+         tibble(imp_ind="imputed", 
+                variable = .x, 
+                value = unlist(pbc.mice$imp[[.x]]))
+       })) %>% 
+  ggplot() + 
+  stat_density(aes(x = value, color = imp_ind), 
+               geom = "line", position = "identity") + 
+  facet_wrap(~ variable, scales = "free")
+```
+
+Results are not identical for MICE as for PMM, but they're very, very similar. It looks like the imputed data are showing a fatter tail for copper, but a shorter tail for cholesterol and triglycerides. 
+
+
+

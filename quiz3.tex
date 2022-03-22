@@ -1,0 +1,458 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+  \usepackage{amssymb}
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Stat 590 Quiz 3},
+  pdfauthor={Tim Farkas},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Stat 590 Quiz 3}
+\author{Tim Farkas}
+\date{5/3/2021}
+
+\begin{document}
+\maketitle
+
+The total credit of this quiz is 10 points. You must submit \textbf{your
+own} lab as an knitted pdf file. To answer the questions, display the
+results and write your comments if asked.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\# For reproducibility {-}{-}{-} don\textquotesingle{}t change this!}
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{01182018}\NormalTok{)}
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## -- Attaching packages --------------------------------------- tidyverse 1.3.0 --
+\end{verbatim}
+
+\begin{verbatim}
+## v ggplot2 3.3.2     v purrr   0.3.4
+## v tibble  3.0.4     v dplyr   1.0.2
+## v tidyr   1.1.2     v stringr 1.4.0
+## v readr   1.4.0     v forcats 0.5.0
+\end{verbatim}
+
+\begin{verbatim}
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+\end{verbatim}
+
+\hypertarget{instructions}{%
+\section{Instructions}\label{instructions}}
+
+Maximization algorithm problems are required for everyone. Between the
+EM algorithm and the Metropolis-Hasting algorithm problem, you may
+choose one.
+
+\hypertarget{maximization-algorithms}{%
+\section{Maximization algorithms}\label{maximization-algorithms}}
+
+Consider the density \(f(x) = [1-cos(x-\theta)]/2\pi\) on
+\(0\leq x \leq 2\pi\), where \(\theta\) is a parameter between \(-\pi\)
+and \(\pi\). The following i.i.d data arise from this density: 3.91,
+4.85, 2.28, 4.06, 3.70, 4.04, 5.46, 3.53, 2.28, 1.96, 2.53, 3.88, 2.22,
+3.47, 2.22, 3.47, 4.82, 2.46, 2.99, 2.54, 0.52, 2.50. We wish to
+estimate \(\theta\).
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{1a.} (1 point) Write down the loglikelihood and graph the
+  loglikelihood function.
+\end{itemize}
+
+\[Loglik(\theta) = - nlog(2\pi) + \sum_{i = 1}^nlog(1 - cos(x_i - \theta))\]
+\[\sum-\frac{sin(x - \theta)}{[1 - cos(x - \theta)]}\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ll}\FloatTok{.1}\NormalTok{a }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x, theta) }\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(x) }\SpecialCharTok{*} \FunctionTok{log}\NormalTok{(}\DecValTok{2} \SpecialCharTok{*}\NormalTok{ pi) }\SpecialCharTok{+} \FunctionTok{sum}\NormalTok{(}\FunctionTok{log}\NormalTok{(}\DecValTok{1} \SpecialCharTok{{-}} \FunctionTok{cos}\NormalTok{(x }\SpecialCharTok{{-}}\NormalTok{ theta)))}
+\NormalTok{x }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\FloatTok{3.91}\NormalTok{, }\FloatTok{4.85}\NormalTok{, }\FloatTok{2.28}\NormalTok{, }\FloatTok{4.06}\NormalTok{, }\FloatTok{3.70}\NormalTok{, }\FloatTok{4.04}\NormalTok{, }\FloatTok{5.46}\NormalTok{, }\FloatTok{3.53}\NormalTok{, }\FloatTok{2.28}\NormalTok{, }\FloatTok{1.96}\NormalTok{, }\FloatTok{2.53}\NormalTok{, }\FloatTok{3.88}\NormalTok{, }\FloatTok{2.22}\NormalTok{, }\FloatTok{3.47}\NormalTok{, }\FloatTok{2.22}\NormalTok{, }\FloatTok{3.47}\NormalTok{, }\FloatTok{4.82}\NormalTok{, }\FloatTok{2.46}\NormalTok{, }\FloatTok{2.99}\NormalTok{, }\FloatTok{2.54}\NormalTok{, }\FloatTok{0.52}\NormalTok{, }\FloatTok{2.50}\NormalTok{)}
+\NormalTok{y }\OtherTok{\textless{}{-}} 
+
+\NormalTok{gg }\OtherTok{\textless{}{-}} \FunctionTok{tibble}\NormalTok{(}\AttributeTok{theta =} \FunctionTok{seq}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{pi, pi, }\AttributeTok{len =} \DecValTok{100}\NormalTok{), }
+       \AttributeTok{y =} \FunctionTok{map\_dbl}\NormalTok{(}\FunctionTok{seq}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{pi, pi, }\AttributeTok{len =} \DecValTok{100}\NormalTok{), }
+                   \SpecialCharTok{\textasciitilde{}} \FunctionTok{ll.1a}\NormalTok{(}\AttributeTok{x =}\NormalTok{ x, }\AttributeTok{theta =}\NormalTok{ .x))) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+} 
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ theta, }\AttributeTok{y =}\NormalTok{ y))}
+
+\FunctionTok{print}\NormalTok{(gg)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{quiz3_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{1b.} (1 point) Write down the bisection updating equation and
+  write R codes to implement the bisection method, with starting values
+  \(-2.7, -1, 0, 1, 2.7\).
+\end{itemize}
+
+\[[a_{t+1}, t_{t+1}] = \begin{array}{ll}
+            [a_t, x^{(t)}]& \quad g'(a_t)g'(x^{(t)}) \le 0 \\
+            [x^{(t)}, b_t]& \quad g'(a_t)g'(x^{(t)}) \gt 0
+        \end{array}\] where
+
+\[g'(x, \theta) = -\frac{sin(x - \theta)}{[1 - cos(x - \theta)]}\] and
+
+\[x^{(t+1)} = (a_{t+1} + b_{t+1}) / 2\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{optim\_bisect }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x, gprime, }\AttributeTok{start =} \SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, }
+                         \AttributeTok{left =} \SpecialCharTok{{-}}\NormalTok{pi, }\AttributeTok{right =}\NormalTok{ pi, }\AttributeTok{epsilon =}\NormalTok{ .}\DecValTok{01}\NormalTok{, }
+                         \AttributeTok{adj =} \ConstantTok{FALSE}\NormalTok{) \{}
+  
+\NormalTok{  err }\OtherTok{=}\NormalTok{ epsilon }\SpecialCharTok{+} \DecValTok{1}
+\NormalTok{  xt\_vec }\OtherTok{=}\NormalTok{ start}
+  
+  \ControlFlowTok{while}\NormalTok{(err }\SpecialCharTok{\textgreater{}}\NormalTok{ epsilon) \{}
+    
+\NormalTok{    slope }\OtherTok{\textless{}{-}} \FunctionTok{gprime}\NormalTok{(x, left) }\SpecialCharTok{*} \FunctionTok{gprime}\NormalTok{(x, xt\_vec[}\FunctionTok{length}\NormalTok{(xt\_vec)])}
+    \ControlFlowTok{if}\NormalTok{(slope }\SpecialCharTok{\textless{}=} \DecValTok{0}\NormalTok{) \{ right }\OtherTok{\textless{}{-}}\NormalTok{ xt\_vec[}\FunctionTok{length}\NormalTok{(xt\_vec)] }
+\NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ left }\OtherTok{\textless{}{-}}\NormalTok{ xt\_vec[}\FunctionTok{length}\NormalTok{(xt\_vec)]}
+\NormalTok{    xt\_vec[}\FunctionTok{length}\NormalTok{(xt\_vec) }\SpecialCharTok{+} \DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}} \ControlFlowTok{if}\NormalTok{(adj) left }\SpecialCharTok{+}\NormalTok{ ( right }\SpecialCharTok{{-}}\NormalTok{ left) }\SpecialCharTok{/} \DecValTok{2} \ControlFlowTok{else}\NormalTok{ (left }\SpecialCharTok{+}\NormalTok{ right) }\SpecialCharTok{/} \DecValTok{2}
+\NormalTok{    err }\OtherTok{\textless{}{-}} \FunctionTok{abs}\NormalTok{(xt\_vec[}\FunctionTok{length}\NormalTok{(xt\_vec)] }\SpecialCharTok{{-}}\NormalTok{ xt\_vec[}\FunctionTok{length}\NormalTok{(xt\_vec) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{]) }\SpecialCharTok{/}
+\NormalTok{      (}\FunctionTok{abs}\NormalTok{(xt\_vec[}\FunctionTok{length}\NormalTok{(xt\_vec)]) }\SpecialCharTok{+}\NormalTok{ epsilon)}
+    
+    
+\NormalTok{  \}}
+  
+  \FunctionTok{return}\NormalTok{(xt\_vec)}
+  
+\NormalTok{\}}
+
+
+\NormalTok{gprime }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x, theta) }\FunctionTok{sum}\NormalTok{(}\SpecialCharTok{{-}}\FunctionTok{sin}\NormalTok{(x }\SpecialCharTok{{-}}\NormalTok{ theta) }\SpecialCharTok{/} 
+\NormalTok{                                   (}\DecValTok{1} \SpecialCharTok{{-}} \FunctionTok{cos}\NormalTok{(x }\SpecialCharTok{{-}}\NormalTok{ theta)))}
+
+\NormalTok{starts }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\FloatTok{2.7}\NormalTok{, }\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\FloatTok{2.7}\NormalTok{)}
+
+\FunctionTok{map}\NormalTok{(starts, }\SpecialCharTok{\textasciitilde{}} \FunctionTok{optim\_bisect}\NormalTok{(}\AttributeTok{x =}\NormalTok{ x, }\AttributeTok{gprime =}\NormalTok{ gprime, }
+             \AttributeTok{left =} \SpecialCharTok{{-}}\NormalTok{pi, }\AttributeTok{right =}\NormalTok{ pi, }\AttributeTok{start =}\NormalTok{ .x, }
+             \AttributeTok{epsilon =} \FloatTok{0.001}\NormalTok{, }\AttributeTok{adj =} \ConstantTok{TRUE}\NormalTok{) }
+\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{map\_dbl}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ .x[}\FunctionTok{length}\NormalTok{(.x)])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -0.02573054 -0.02575946 -1.64289342 -0.02574502  2.87077216
+\end{verbatim}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{1c.} (1 point) Write down the Newton Rapson updating equation
+  and write R codes to implement the method, with starting values
+  \(-2.7, -1, 0, 1, 2.7\).
+\end{itemize}
+
+\[x^{(t+1)} = x^{(t)} - \frac{g'(x^{(t)})}{g''(x^{(t)})}\]
+
+Where
+
+\[g''(x, \theta) = 
+\frac{1}{1 - cos(x - \theta)}\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{optim\_newtraph }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(dg, d2g, x, theta0, iter) \{ }
+  
+\NormalTok{  thetatrace }\OtherTok{\textless{}{-}}\NormalTok{ theta }\OtherTok{\textless{}{-}}\NormalTok{ theta0 }\CommentTok{\#initialize starting conditions}
+  
+  \DocumentationTok{\#\# iterate}
+  \ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{iter) \{}
+\NormalTok{    thetatrace[i}\SpecialCharTok{+}\DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}}\NormalTok{ theta }\OtherTok{\textless{}{-}}\NormalTok{ theta }\SpecialCharTok{{-}} \FunctionTok{dg}\NormalTok{(x, theta)}\SpecialCharTok{/}\FunctionTok{d2g}\NormalTok{(x, theta)}
+    \ControlFlowTok{if}\NormalTok{(}\FunctionTok{is.nan}\NormalTok{(theta)) \{}
+\NormalTok{      thetatrace }\OtherTok{\textless{}{-}}\NormalTok{ thetatrace[}\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(thetatrace)]}
+\NormalTok{      theta }\OtherTok{\textless{}{-}}\NormalTok{ thetatrace[}\FunctionTok{length}\NormalTok{(thetatrace)]}
+      \ControlFlowTok{break}
+\NormalTok{    \}}
+\NormalTok{  \}}
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{final =}\NormalTok{ theta, }\AttributeTok{trace =}\NormalTok{ thetatrace)) }
+  
+\NormalTok{\}}
+
+\NormalTok{g2prime }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x, theta) }\FunctionTok{sum}\NormalTok{(}\DecValTok{1} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}} \FunctionTok{cos}\NormalTok{(x }\SpecialCharTok{{-}}\NormalTok{ theta))) }
+
+\FunctionTok{map}\NormalTok{(starts, }\SpecialCharTok{\textasciitilde{}} \FunctionTok{optim\_newtraph}\NormalTok{(}\AttributeTok{dg =}\NormalTok{ gprime, }\AttributeTok{d2g =}\NormalTok{ g2prime, }
+                             \AttributeTok{x =}\NormalTok{ x, }\AttributeTok{theta0 =}\NormalTok{ .x, }\AttributeTok{iter =} \DecValTok{100}\NormalTok{)}
+\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{map\_dbl}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ .x}\SpecialCharTok{$}\NormalTok{final)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -2.753185 -1.463185  0.520000  2.220000  2.530000
+\end{verbatim}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{1d.} (1 point) Repeat part c using 200 equally spaced starting
+  values between \(-\pi\) and \(\pi\).
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{map}\NormalTok{(}\FunctionTok{seq}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{pi, pi, }\AttributeTok{len=}\DecValTok{200}\NormalTok{), }\SpecialCharTok{\textasciitilde{}} \FunctionTok{optim\_newtraph}\NormalTok{(}\AttributeTok{dg =}\NormalTok{ gprime, }\AttributeTok{d2g =}\NormalTok{ g2prime, }
+                             \AttributeTok{x =}\NormalTok{ x, }\AttributeTok{theta0 =}\NormalTok{ .x, }\AttributeTok{iter =} \DecValTok{100}\NormalTok{)}
+\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{map\_dbl}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ .x}\SpecialCharTok{$}\NormalTok{final) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{tibble}\NormalTok{(}\AttributeTok{start =} \FunctionTok{seq}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{pi, pi, }\AttributeTok{len=}\DecValTok{200}\NormalTok{), }\AttributeTok{estimate =}\NormalTok{ .) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+} 
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ start, }\AttributeTok{y =}\NormalTok{ estimate))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{quiz3_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{1e.} (1 point) Discuss your results from b-d.
+\end{itemize}
+
+This is an extremely lumpy likelihood with many local maxima, so it's
+not surprising that the results are strongly dependent on starting
+values. The difference between methods makes sense as well, since the
+successive iterations in each will push the algorithm into different
+zones, each with different optima, because there are SO many.
+
+\hypertarget{em-algorithm}{%
+\section{EM algorithm}\label{em-algorithm}}
+
+Recall the peppered moth analysis introduced in Example 4.2. In the
+field, it is quite difficult to distinguish the insularia and typica
+pheotypes due to variations in wing color and mottle. In addition to the
+622 moths mentioned in the example, suppose the sample collected by the
+researchers actually included \(n_U= 578\) more moths that were known to
+be \texttt{insularia} or \texttt{typical} but whose exact pheotypes
+could not be determined.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{2a.} (2.5 points) Derive the EM algorithm for maximum
+  likelihood estimation of \(p_C, p_I,\) and \(p_I\) for this modified
+  problem having observed data \(n_C, n_I, n_T\), and \(n_U\) as given
+  above. The derivation include writing down the Q function, the E step,
+  and the M step.
+\end{itemize}
+
+Expectations for \emph{carbonaria} are as in Example 4.2. Expectations
+for \emph{insularia} and \emph{typica} should be \ldots{}
+
+\[E(N_{II}|\mathbf{n}, \mathbf{p}) = n_{II}^{(t)} =
+\frac{n_Ip_I^2}{p_I^2 + 2p_Ip_T} + 
+\frac{n_Up_I^2}{p_I^2 + 2p_Ip_T + p_T^2}
+\] \[E(N_{IT}|\mathbf{n}, \mathbf{p}) = n_{IT}^{(t)} = 
+\frac{2n_Ip_Ip_T}{p_I^2 + 2p_Ip_T} + 
+\frac{2n_Up_Ip_T}{p_I^2 + 2p_Ip_T + p_T^2}
+\] \[E(N_{TT}|\mathbf{n}, \mathbf{p}) = n_{TT}^{(t)} = 
+nT + 
+\frac{n_Up_T^2}{p_I^2 + 2p_Ip_T + p_T^2}
+\] \[Q(\mathbf{p}|\mathbf{p}^t) = 
+n_{CC}^{(t)}log(p_C^2) +
+n_{CI}^{(t)}log(2p_Cp_I) +
+n_{CT}^{(t)}log(p_Cp_T) +
+n_{II}^{(t)}log(p_I^2) +
+n_{IT}^{(t)}log(2p_Ip_T) +
+n_{TT}^{(t)}log(p_T^2) +
+k(n_C, n_I, n_T, n_U, \mathbf{p}^{(t)})\]
+
+The only differences here from example 4.2 is that \(n_{TT}\) is not
+observed, because some TT alleles exist in the unknown samples, and the
+conditional expectation for the multinomial coefficient depends also on
+\(n_U\).
+
+The M step is also the same as in the book. It's the expectations for
+\(N_II\), \(N_IT\), and \(N_TT\) that differ.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{2b.} (2.5 points) Write R codes to implement the algorithm.
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# ugh don\textquotesingle{}t look this is so ugly. }
+\NormalTok{nCCt }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nC, pC, pI, pT) nC}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/}\NormalTok{ (pC}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pI }\SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pT)}
+\NormalTok{nCIt }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nC, pC, pI, pT) nC}\SpecialCharTok{*}\DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pI }\SpecialCharTok{/}\NormalTok{ (pC}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pI }\SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pT)}
+\NormalTok{nCTt }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nC, pC, pI, pT) nC}\SpecialCharTok{*}\DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pT }\SpecialCharTok{/}\NormalTok{ (pC}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pI }\SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pC}\SpecialCharTok{*}\NormalTok{pT)}
+\NormalTok{nIIt }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nI, nU, pI, pT) nI }\SpecialCharTok{*}\NormalTok{ pI}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/}\NormalTok{ (pI}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pT}\SpecialCharTok{*}\NormalTok{pI) }\SpecialCharTok{+}\NormalTok{ nU }\SpecialCharTok{*}\NormalTok{ pI}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/}\NormalTok{ (pI}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pI}\SpecialCharTok{*}\NormalTok{pT }\SpecialCharTok{+}\NormalTok{ pT}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\NormalTok{nITt }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nI, nU, pI, pT) nI }\SpecialCharTok{*} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pI}\SpecialCharTok{*}\NormalTok{pT }\SpecialCharTok{/}\NormalTok{ (pI}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pT}\SpecialCharTok{*}\NormalTok{pI) }\SpecialCharTok{+}\NormalTok{ nU }\SpecialCharTok{*} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pI}\SpecialCharTok{*}\NormalTok{pT }\SpecialCharTok{/}\NormalTok{ (pI}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pI}\SpecialCharTok{*}\NormalTok{pT }\SpecialCharTok{+}\NormalTok{ pT}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\NormalTok{nTTt }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nT, nU, pI, pT) nT }\SpecialCharTok{+}\NormalTok{ nU }\SpecialCharTok{*}\NormalTok{ pT}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/}\NormalTok{ (pI}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{+} \DecValTok{2}\SpecialCharTok{*}\NormalTok{pI}\SpecialCharTok{*}\NormalTok{pT }\SpecialCharTok{+}\NormalTok{ pT}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+
+\NormalTok{pC\_next }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nC, nI, nT, nU, pC, pI, pT, n) \{}
+\NormalTok{  (}\DecValTok{2}\SpecialCharTok{*}\FunctionTok{nCCt}\NormalTok{(nC, pC, pI, pT) }\SpecialCharTok{+} \FunctionTok{nCIt}\NormalTok{(nC, pC, pI, pT) }\SpecialCharTok{+} \FunctionTok{nCTt}\NormalTok{(nC, pC, pI, pT))}\SpecialCharTok{/}\NormalTok{(}\DecValTok{2}\SpecialCharTok{*}\NormalTok{n)}
+\NormalTok{\}}
+
+\NormalTok{pI\_next }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nC, nI, nT, nU, pC, pI, pT, n) \{}
+\NormalTok{  (}\DecValTok{2}\SpecialCharTok{*}\FunctionTok{nIIt}\NormalTok{(nI, nU, pI, pT) }\SpecialCharTok{+} \FunctionTok{nITt}\NormalTok{(nI, nU,pI, pT) }\SpecialCharTok{+} \FunctionTok{nCIt}\NormalTok{(nC, pC, pI, pT))}\SpecialCharTok{/}\NormalTok{(}\DecValTok{2}\SpecialCharTok{*}\NormalTok{n)}
+\NormalTok{\}}
+
+\NormalTok{pT\_next }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(nC, nI, nT, nU, pC, pI, pT, n) \{}
+\NormalTok{  (}\DecValTok{2}\SpecialCharTok{*}\FunctionTok{nTTt}\NormalTok{(nT, nU, pI, pT) }\SpecialCharTok{+} \FunctionTok{nCTt}\NormalTok{(nC, pC, pI, pT) }\SpecialCharTok{+} \FunctionTok{nITt}\NormalTok{(nI, nU,pI, pT))}\SpecialCharTok{/}\NormalTok{(}\DecValTok{2}\SpecialCharTok{*}\NormalTok{n)}
+\NormalTok{\}}
+
+\NormalTok{enns }\OtherTok{\textless{}{-}} \FunctionTok{tibble}\NormalTok{(}\AttributeTok{nC =} \DecValTok{85}\NormalTok{, }\AttributeTok{nI =} \DecValTok{196}\NormalTok{, }\AttributeTok{nT =} \DecValTok{341}\NormalTok{, }\AttributeTok{nU =} \DecValTok{622}\NormalTok{)}
+\CommentTok{\#enns \textless{}{-} tibble(nC = 85, nI = 196, nT = 341, nU = 0) \# old }
+
+\NormalTok{pees }\OtherTok{\textless{}{-}} \FunctionTok{tibble}\NormalTok{(}\AttributeTok{pC =} \FloatTok{0.33}\NormalTok{, }\AttributeTok{pI =} \FloatTok{0.33}\NormalTok{, }\AttributeTok{pT =} \FloatTok{0.33}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as.matrix}\NormalTok{()}
+\NormalTok{i }\OtherTok{=} \DecValTok{1}
+\NormalTok{Rcrit }\OtherTok{=} \FloatTok{0.001}
+\NormalTok{R }\OtherTok{=}\NormalTok{ Rcrit }\SpecialCharTok{+} \DecValTok{1}
+\ControlFlowTok{while}\NormalTok{(R }\SpecialCharTok{\textgreater{}}\NormalTok{ Rcrit) \{}
+\NormalTok{  pees }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(pees, }\FunctionTok{c}\NormalTok{(}\FunctionTok{pC\_next}\NormalTok{(enns}\SpecialCharTok{$}\NormalTok{nC, enns}\SpecialCharTok{$}\NormalTok{nI, enns}\SpecialCharTok{$}\NormalTok{nT, enns}\SpecialCharTok{$}\NormalTok{nU, }
+\NormalTok{                                pees[i, }\DecValTok{1}\NormalTok{], pees[i, }\DecValTok{2}\NormalTok{], pees[i, }\DecValTok{3}\NormalTok{], }\AttributeTok{n =} \FunctionTok{sum}\NormalTok{(}\FunctionTok{as.matrix}\NormalTok{(enns))), }
+                        \FunctionTok{pI\_next}\NormalTok{(enns}\SpecialCharTok{$}\NormalTok{nC, enns}\SpecialCharTok{$}\NormalTok{nI, enns}\SpecialCharTok{$}\NormalTok{nT, enns}\SpecialCharTok{$}\NormalTok{nU, }
+\NormalTok{                                pees[i, }\DecValTok{1}\NormalTok{], pees[i, }\DecValTok{2}\NormalTok{], pees[i, }\DecValTok{3}\NormalTok{], }\AttributeTok{n =} \FunctionTok{sum}\NormalTok{(}\FunctionTok{as.matrix}\NormalTok{(enns))), }
+                        \FunctionTok{pT\_next}\NormalTok{(enns}\SpecialCharTok{$}\NormalTok{nC, enns}\SpecialCharTok{$}\NormalTok{nI, enns}\SpecialCharTok{$}\NormalTok{nT, enns}\SpecialCharTok{$}\NormalTok{nU, }
+\NormalTok{                                pees[i, }\DecValTok{1}\NormalTok{], pees[i, }\DecValTok{2}\NormalTok{], pees[i, }\DecValTok{3}\NormalTok{], }\AttributeTok{n =} \FunctionTok{sum}\NormalTok{(}\FunctionTok{as.matrix}\NormalTok{(enns)))))}
+\NormalTok{  i }\OtherTok{=}\NormalTok{ i}\SpecialCharTok{+}\DecValTok{1}
+\NormalTok{  R }\OtherTok{=} \FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{((pees[i,] }\SpecialCharTok{{-}}\NormalTok{ pees[i }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{,])}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)) }\SpecialCharTok{/} \FunctionTok{sqrt}\NormalTok{(}\FunctionTok{sum}\NormalTok{(pees[i }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{,]))}
+  
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{metropolis-hasting-algorithm}{%
+\section{Metropolis-Hasting
+algorithm}\label{metropolis-hasting-algorithm}}
+
+Simulating from a mixture distribution
+\(\delta N(7, 0.5^2)+(1-\delta)N(10, 0.5^2)\) is straightforward.
+However, using the Metropolis-Hasting algorithm to simulate realizations
+from this distribution is useful for exploring the role of the proposal
+distribution.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{3a.} (1 point) Write down a Metropolis-Hasting algorithm to
+  simulate from the mixture distribution with \(\delta=0.7\), using
+  \(N(x^{(t)},0.01^2)\) as the proposal distribution.
+\item
+  \textbf{3b.} (2 points) Write R codes to implement the
+  Metropolis-Hasting algorithm. For each of the three starting values,
+  \(x^{(0)}=0, 7, 15\), run the chain for 10,000 iterations.
+\item
+  \textbf{3c.} (1 point) Plot the sample path of the output from each
+  chain. What would you conclude about the chains? For each of the
+  simulations, create a histogram of the realizations with the true
+  density superimposed on the histogram. Based on the histograms, what
+  can you say about the behavior of the chains?
+\item
+  \textbf{3d.} (1 point) Experiment on variance of the proposal
+  distribution to improve the convergence properties of the chains.
+\end{itemize}
+
+\end{document}
